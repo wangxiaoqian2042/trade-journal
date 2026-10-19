@@ -1,5 +1,10 @@
 # 交易日志（Trade Journal for Obsidian）
 
+[![最新版本](https://img.shields.io/github/v/release/wangxiaoqian2042/trade-journal?style=flat-square)](https://github.com/wangxiaoqian2042/trade-journal/releases/latest)
+[![下载量](https://img.shields.io/github/downloads/wangxiaoqian2042/trade-journal/total?style=flat-square)](https://github.com/wangxiaoqian2042/trade-journal/releases)
+
+> **⬇️ 只是想用，不打算编译？** 去 [**Releases**](https://github.com/wangxiaoqian2042/trade-journal/releases/latest) 下载 `trade-journal-vX.Y.Z.zip`，解压后按里面的《安装说明》三步装好即可。不需要 Node、不需要命令行。
+
 本地优先的交易日志插件。每笔交易是 vault 里的一个 Markdown 文件，CSV 手工导入，所有统计在自己机器上算，不联网、不要账号。
 
 > English README → [README.en.md](README.en.md)
@@ -35,7 +40,20 @@
 
 `.obsidian` 默认是隐藏目录。不想折腾隐藏文件的话：设置 → 第三方插件 → 「已安装插件」右侧的文件夹图标，会直接打开 `plugins` 目录，把 `trade-journal` 文件夹拖进去即可。
 
-**分发给别人**：仓库根目录的 `trade-journal-v0.1.0.zip` 就是发布包（含插件三件套 + 安装说明 + 示例 CSV）。对方解压后把 `trade-journal` 文件夹放进自己的 `plugins/` 目录，关掉安全模式、启用即可。想让人一键装并自动更新，就把三个文件放到 GitHub Release（tag 与 `manifest.json` 的 `version` 一致），对方用 BRAT 填仓库地址。
+## 分发给别人
+
+三种方式，按对方的动手能力选：
+
+**① 传 zip（最省事，谁都装得上）**
+把 `trade-journal-vX.Y.Z.zip` 直接发给对方（微信/网盘都行）。解压后把 `trade-journal` 文件夹放进 `<vault>/.obsidian/plugins/`，关掉受限模式，启用。压缩包里自带《安装说明.txt》。
+
+**② 只发仓库地址 + BRAT（能自动更新）**
+对方先装 [BRAT](https://github.com/TfTHacker/obsidian42-brat) 插件 → 命令面板执行 `BRAT: Add a beta plugin for testing` → 填本仓库地址 `wangxiaoqian2042/trade-journal` → 确定。之后插件更新，BRAT 会提示。
+
+**③ 只发仓库地址（不推荐给非技术用户）**
+仓库里只有源码，没有 `main.js`。对方得自己 `npm install && npm run build`，或者自己在 Releases 页面找 zip——多绕一步，容易被"这不是安装包吗"卡住。真要发地址，请连 Releases 链接一起发。
+
+> 想进 Obsidian 官方社区市场，需要向 [obsidian-releases](https://github.com/obsidianmd/obsidian-releases) 提交人工审核（仓库公开、许可证合规、无混淆代码）。个人自用/小范围分发不必走这条。
 
 ## 界面
 
