@@ -33,10 +33,14 @@ jobs:
             exit 1
           fi
 
+      - name: Pack zip for manual install
+        run: ./scripts/pack-release.sh
+
       - uses: softprops/action-gh-release@v2
         with:
           files: |
             main.js
             manifest.json
             styles.css
+            trade-journal-v*.zip
           generate_release_notes: true
