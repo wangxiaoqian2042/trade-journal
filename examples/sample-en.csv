@@ -1,0 +1,5 @@
+﻿trade_date,symbol,side,qty,entry_price,exit_price,commission,strategy,account
+2026-09-02,NVDA,Buy,100,171.20,174.90,1.10,Breakout,Main
+2026-09-03,ES,Sell,1,5875.50,5862.25,2.40,Reversal,Prop-50K
+2026-09-05,AAPL,Buy,150,226.80,225.10,1.35,Pullback,Main
+2026-09-08,BTC,Buy,0.25,66200,67850,5.20,Range,Main

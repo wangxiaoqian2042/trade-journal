@@ -1,0 +1,10 @@
+node_modules/
+main.js
+main.js.map
+demo/
+*.log
+.cache/
+.DS_Store
+release/
+*.zip
+.tmp/

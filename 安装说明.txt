@@ -1,0 +1,115 @@
+Trade Journal · Obsidian 本地安装说明
+=====================================
+
+版本 0.1.0 ｜ 要求 Obsidian 1.5.0 以上（桌面版 / 移动版都可以）
+
+
+一、这个压缩包里有什么
+----------------------
+trade-journal/          插件本体（三个文件，缺一不可）
+  ├── main.js           程序代码
+  ├── manifest.json     插件信息
+  └── styles.css        样式
+示例交易.csv            一份示例数据，可用来试导入
+安装说明.txt            就是本文件
+
+
+二、安装（手动，推荐给朋友用）
+------------------------------
+关键点：整个 trade-journal 文件夹必须放进「你自己的仓库」里的
+      .obsidian/plugins/ 目录下，而不是随便找个地方解压。
+
+最终路径长这样：
+
+  macOS
+    ~/Documents/你的仓库名/.obsidian/plugins/trade-journal/manifest.json
+
+  Windows
+    C:\Users\你的用户名\Documents\你的仓库名\.obsidian\plugins\trade-journal\manifest.json
+
+  iCloud / 其他位置
+    找到你的仓库文件夹 → 里面的 .obsidian → plugins
+
+
+具体步骤
+--------
+
+1) 先找到 .obsidian 文件夹
+
+   它默认是隐藏的，两个办法任选：
+
+   办法 A（最简单，不用管隐藏文件）
+     打开 Obsidian → 左下角「设置」→ 左侧「第三方插件」→
+     在「已安装插件」那一栏右侧点「文件夹」图标，
+     系统会直接弹出 .obsidian/plugins 目录。把 trade-journal 文件夹拖进去即可。
+
+   办法 B（手动找）
+     macOS：Finder 里按 Command + Shift + . 显示隐藏文件
+     Windows：资源管理器 → 顶部「查看」→ 勾选「隐藏的项目」
+
+2) 把 trade-journal 文件夹整个复制进 plugins 目录
+
+   复制完检查一下层级，最常见的错误是多套了一层：
+   正确：plugins/trade-journal/manifest.json
+   错误：plugins/trade-journal/trade-journal/manifest.json
+   错误：plugins/trade-journal.zip
+
+3) 重启 Obsidian（或：设置 → 第三方插件 → 右上角刷新按钮）
+
+   稳妥起见建议直接完全退出再打开。
+
+4) 打开「受限模式 / 安全模式」开关
+
+   设置 → 第三方插件 → 关闭「受限模式」（老版本叫「安全模式」）。
+   不关的话，第三方插件列表是灰的、无法启用。
+
+5) 在「已安装插件」里找到 Trade Journal，把它打开（开关拨到右侧）
+
+6) 使用
+
+   左侧栏会出现一个「交易日志」图标，点一下就在主区域打开面板；
+   也可以在命令面板（Command/Ctrl + P）里搜「Trade Journal」。
+
+   插件会自动在仓库里建一个 Trading 文件夹存放交易笔记，
+   第一次进入是空列表，去「导入 CSV」页签导入即可。
+   目录名可以在 设置 → 第三方插件 → Trade Journal 里改。
+
+
+三、卸载 / 更新
+----------------
+卸载：设置 → 第三方插件 → 找到 Trade Journal → 关闭开关，
+      再删除 plugins/trade-journal 文件夹。
+      注意：Trading 文件夹里的交易笔记不会被删，那是你自己的数据。
+
+更新：用新的 main.js / manifest.json / styles.css 覆盖同名文件，
+      然后重启 Obsidian。（不必删整个文件夹，配置会保留在 data.json）
+
+
+四、常见问题
+------------
+Q: 插件列表里找不到 Trade Journal？
+A: 90% 是目录层级错了，回去看第 2 步的三行对照。
+
+Q: 显示「加载失败 / Failed to load plugin」？
+A: manifest.json 和 main.js 是否都在 trade-journal 文件夹里；
+   以及 Obsidian 版本是否 ≥ 1.5.0。
+
+Q: 打开了但没有图标？
+A: 检查是不是还开着「受限模式」。
+
+Q: 导入 CSV 时字段映射不对？
+A: 导入页可以手动改映射，把下拉框指到正确的列。
+   AMP 的「订单历史」是委托级（一行一个成交），
+   要在导入页把「数据形态」切到「委托级，需要配对」，
+   否则会按行级解析导致开平仓错乱。
+
+
+五、进阶：让别人也能一键装
+--------------------------
+1) 传到 GitHub 建仓库，把 main.js / manifest.json / styles.css 传到 Release 里
+   （tag 名要和 manifest.json 里的 version 一致，如 0.1.0），
+   对方装一个 BRAT 插件、填你的仓库地址，就能装并自动更新。
+
+2) 想进 Obsidian 官方社区插件市场，需要提交到
+   https://github.com/obsidianmd/obsidian-releases 走人工审核，
+   要求仓库公开、许可证合规、不含混淆代码。个人自用/小范围分发不必走这条。

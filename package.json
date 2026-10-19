@@ -1,0 +1,27 @@
+{
+  "name": "trade-journal",
+  "version": "0.1.0",
+  "description": "Local-first trading journal for Obsidian with CSV import and analytics.",
+  "main": "main.js",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "demo": "node scripts/build-demo.mjs",
+    "test": "node scripts/run-tests.mjs"
+  },
+  "keywords": ["obsidian", "trading", "journal", "csv"],
+  "author": "王小千",
+  "license": "MIT",
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "esbuild": "^0.28.0",
+    "obsidian": "^1.13.0",
+    "typescript": "^5.9.0"
+  }
+}
