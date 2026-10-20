@@ -92,7 +92,7 @@ function Demo({
   initialTab,
   csvPrefill,
 }: {
-  initialTab?: "dashboard" | "trades" | "import";
+  initialTab?: "overview" | "dashboard" | "trades" | "import";
   csvPrefill?: string;
 }) {
   const [trades, setTrades] = useState<Trade[]>(() => makeTrades());
@@ -230,7 +230,11 @@ const el = document.getElementById("app");
 if (el)
   createRoot(el).render(
     <Demo
-      initialTab={initialTab === "trades" || initialTab === "import" ? initialTab : "dashboard"}
+      initialTab={
+        initialTab === "overview" || initialTab === "trades" || initialTab === "import"
+          ? initialTab
+          : "dashboard"
+      }
       csvPrefill={
         csvParam === "1"
           ? DEMO_CSV

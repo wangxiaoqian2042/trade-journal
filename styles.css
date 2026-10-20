@@ -752,6 +752,11 @@
 
 .tj-num {
   text-align: right;
+}
+
+/* 只对表格单元格生效：网格子项上的 width:1% 会被算成 0，导致整列消失 */
+th.tj-num,
+td.tj-num {
   width: 1%;
 }
 
@@ -1827,4 +1832,256 @@
 
 .tj-drill-bar .tj-link + .tj-link {
   margin-left: 0;
+}
+
+/* ============ 概要视图 ============ */
+.tj-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.tj-hero {
+  border: 1px solid var(--tj-line);
+  border-radius: var(--tj-radius);
+  padding: 16px 18px;
+  background: linear-gradient(180deg, var(--tj-panel) 0%, var(--tj-panel-2) 100%);
+}
+
+.tj-hero-kicker {
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--tj-muted);
+}
+
+.tj-hero-line {
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.55;
+  margin-top: 6px;
+  letter-spacing: -0.01em;
+}
+
+.tj-hero-bar {
+  position: relative;
+  height: 6px;
+  margin-top: 14px;
+  border-radius: 3px;
+  background: var(--tj-line);
+  overflow: visible;
+}
+
+.tj-hero-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--tj-accent);
+  transition: width 0.25s ease;
+}
+
+.tj-hero-bar-note {
+  display: block;
+  margin-top: 7px;
+  font-size: 11.5px;
+  color: var(--tj-muted);
+}
+
+/* 结论清单 */
+.tj-insights {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tj-insight {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 7px 8px;
+  border-radius: 7px;
+}
+
+.tj-insight:hover {
+  background: var(--tj-panel);
+}
+
+.tj-insight-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-top: 7px;
+  flex: 0 0 auto;
+  background: var(--tj-muted);
+}
+
+.tj-insight.is-bad .tj-insight-dot {
+  background: var(--tj-green);
+}
+
+.tj-insight.is-good .tj-insight-dot {
+  background: var(--tj-red);
+}
+
+.tj-insight-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.tj-insight-text {
+  font-size: 13px;
+  font-weight: 550;
+}
+
+.tj-insight.is-bad .tj-insight-text {
+  color: var(--tj-green);
+}
+
+.tj-insight-detail {
+  font-size: 11.5px;
+  color: var(--tj-muted);
+  line-height: 1.5;
+}
+
+/* 强项 / 短板 */
+.tj-hl-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.tj-hl-item {
+  display: grid;
+  grid-template-columns: 34px 1fr auto;
+  grid-template-areas:
+    "dim key pnl"
+    ". meta meta";
+  gap: 1px 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--tj-line);
+}
+
+.tj-hl-item:last-child {
+  border-bottom: none;
+}
+
+.tj-hl-dim {
+  grid-area: dim;
+  font-size: 10.5px;
+  color: var(--tj-muted);
+  letter-spacing: 0.03em;
+  padding-top: 2px;
+}
+
+.tj-hl-key {
+  grid-area: key;
+  font-size: 13px;
+  font-weight: 550;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tj-hl-pnl {
+  grid-area: pnl;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.tj-hl-meta {
+  grid-area: meta;
+  font-size: 11px;
+  color: var(--tj-muted);
+}
+
+/* ============ 回撤记录表 ============ */
+.tj-ddtable {
+  display: flex;
+  flex-direction: column;
+  font-variant-numeric: tabular-nums;
+}
+
+.tj-dd-head,
+.tj-dd-row {
+  display: grid;
+  grid-template-columns: minmax(78px, 1fr) 84px 38px 38px 54px;
+  gap: 6px;
+  align-items: center;
+}
+
+.tj-dd-head span,
+.tj-dd-row > span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tj-dd-head {
+  font-size: 10.5px;
+  color: var(--tj-muted);
+  letter-spacing: 0.03em;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--tj-line);
+}
+
+.tj-dd-row {
+  padding: 7px 0;
+  border-bottom: 1px solid var(--tj-line);
+  font-size: 12px;
+}
+
+.tj-dd-row:last-of-type {
+  border-bottom: none;
+}
+
+.tj-dd-depth {
+  font-weight: 600;
+}
+
+.tj-dd-span {
+  color: var(--tj-muted);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.tj-dd-tag {
+  display: inline-block;
+  font-size: 10.5px;
+  padding: 1px 6px;
+  border-radius: 20px;
+  border: 1px solid var(--tj-line-strong);
+  color: var(--tj-muted);
+  white-space: nowrap;
+}
+
+.tj-dd-tag.is-ok {
+  color: var(--tj-red);
+  border-color: color-mix(in srgb, var(--tj-red) 40%, var(--tj-line));
+}
+
+.tj-dd-tag.is-live {
+  color: var(--tj-green);
+  border-color: color-mix(in srgb, var(--tj-green) 40%, var(--tj-line));
+}
+
+.tj-dd-foot {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--tj-muted);
+}
+
+@media (max-width: 620px) {
+  .tj-dd-head,
+  .tj-dd-row {
+    grid-template-columns: 1fr 84px 40px 44px;
+  }
+
+  .tj-dd-head span:nth-child(4),
+  .tj-dd-row > span:nth-child(4) {
+    display: none;
+  }
 }

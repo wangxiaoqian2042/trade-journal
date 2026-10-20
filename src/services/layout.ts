@@ -28,6 +28,7 @@ export const DEFAULT_LAYOUT: WidgetLayout[] = [
   { id: "calendar", w: 5, h: 7 },
   { id: "strategy", w: 6, h: 5 },
   { id: "drawdown", w: 6, h: 5 },
+  { id: "ddList", w: 6, h: 5 },
   { id: "weekday", w: 6, h: 5 },
   { id: "symbolPerf", w: 6, h: 5 },
   { id: "recentTrades", w: 6, h: 6 },

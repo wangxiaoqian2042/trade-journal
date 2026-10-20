@@ -6,7 +6,9 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { JournalApp } from "../src/components/JournalApp";
 import { Dashboard } from "../src/components/Dashboard";
+import { Overview } from "../src/components/Overview";
 import { buildSnapshot } from "../src/services/aggregate";
+import { DrawdownTable } from "../src/components/charts";
 import { Trade } from "../src/types";
 
 function makeTrades(n = 40): Trade[] {
@@ -108,7 +110,7 @@ expect("空数据渲染不抛错", emptyHtml.includes("还没有交易数据"));
 
 /* ---------- 5. 网格与拖拽把手 ---------- */
 expect("渲染出网格容器", html.includes("tj-grid"));
-expect("8 个 widget 全部上屏", (html.match(/data-widget-id/g) || []).length === 8);
+expect("9 个 widget 全部上屏", (html.match(/data-widget-id/g) || []).length === 9);
 expect("默认（只读）不显示把手", !html.includes("tj-widget-handle"));
 
 const editableHtml = renderToStaticMarkup(
@@ -121,7 +123,7 @@ const editableHtml = renderToStaticMarkup(
   })
 );
 expect("可编辑时出现拖拽把手", editableHtml.includes("tj-widget-handle"));
-expect("可编辑时出现拉伸柄", (editableHtml.match(/tj-widget-resize/g) || []).length === 8);
+expect("可编辑时出现拉伸柄", (editableHtml.match(/tj-widget-resize/g) || []).length === 9);
 expect("可编辑时出现重置布局按钮", editableHtml.includes("重置布局"));
 expect("网格列数变量已设置", editableHtml.includes("--tj-cols"));
 
@@ -198,6 +200,37 @@ expect("无 onSetSetup 时不提设置策略", !tableHtml.includes("批量设置
 /* ---------- 9. 月历跨月跳转 ---------- */
 expect("跨月数据出现月份跳转条", allHtml.includes("tj-cal-months"));
 expect("单月数据不显示跳转条", !monthHtml.includes("tj-cal-months"));
+
+
+/* ---------- 10. 概要视图 ---------- */
+const ovHtml = renderToStaticMarkup(
+  React.createElement(Overview, { snapshot: allSnap, cur: "$" })
+);
+expect("概要视图渲染出 hero", ovHtml.includes("tj-hero"));
+expect("概要有一句话总结", ovHtml.includes("个交易日") && ovHtml.includes("胜率"));
+expect("概要显示结论清单", ovHtml.includes("tj-insights"));
+expect("概要区分强项短板", ovHtml.includes("强项") && ovHtml.includes("短板"));
+expect("概要说明 R 倍数缺数据", ovHtml.includes("R 倍数"));
+expect("概要展示风险指标", ovHtml.includes("平均恢复") || ovHtml.includes("水下时间"));
+
+const overviewTab = renderToStaticMarkup(
+  React.createElement(JournalApp, {
+    trades,
+    currency: "$",
+    initialTab: "overview",
+    onImport: async () => ({ created: 0, skipped: 0 }),
+  })
+);
+expect("速览页签可进入", overviewTab.includes("tj-overview"));
+expect("速览页签出现在分段控件", overviewTab.includes("速览"));
+
+/* ---------- 11. 回撤记录表 ---------- */
+const ddHtml = renderToStaticMarkup(
+  React.createElement(DrawdownTable, { trades, cur: "$" })
+);
+expect("回撤记录表渲染", ddHtml.includes("tj-ddtable"));
+expect("回撤表有状态标签", ddHtml.includes("已收复") || ddHtml.includes("进行中"));
+expect("回撤表显示段数", ddHtml.includes("段回撤"));
 
 console.log(failures.length === 0 ? "\n渲染冒烟全部通过" : `\n${failures.length} 项失败: ${failures.join(", ")}`);
 process.exit(failures.length === 0 ? 0 : 1);

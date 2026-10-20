@@ -1,5 +1,14 @@
 import { Trade } from "../types";
-import { DayPnl, Summary, dailyPnl, summarize } from "./analytics";
+import {
+  DayPnl,
+  DrawdownEpisode,
+  DrawdownStats,
+  Summary,
+  dailyPnl,
+  drawdownEpisodes,
+  drawdownStats,
+  summarize,
+} from "./analytics";
 
 /**
  * 指标注册表。
@@ -8,8 +17,8 @@ import { DayPnl, Summary, dailyPnl, summarize } from "./analytics";
  * 只要往 REGISTRY 里加一条。卡片、环比、导出全部从同一张表取。
  */
 
-export type MetricFormat = "money" | "pct" | "num" | "ratio" | "duration";
-export type MetricCategory = "performance" | "volume" | "average";
+export type MetricFormat = "money" | "pct" | "num" | "ratio" | "duration" | "days";
+export type MetricCategory = "performance" | "volume" | "average" | "risk";
 
 /** 一次算好，所有指标共用，避免每个指标都遍历一遍交易 */
 export interface MetricBase {
@@ -20,6 +29,10 @@ export interface MetricBase {
   holdAvg: number | null;
   /** 参与持仓时间统计的笔数 */
   holdCount: number;
+  /** 回撤分段明细 */
+  dd: DrawdownEpisode[];
+  /** 回撤汇总（水下时间、平均恢复…） */
+  ddStats: DrawdownStats;
 }
 
 export interface MetricDef {
@@ -50,6 +63,8 @@ export function makeBase(trades: Trade[]): MetricBase {
     days: dailyPnl(trades),
     holdAvg: holdValues.length ? holdValues.reduce((a, b) => a + b, 0) / holdValues.length : null,
     holdCount: holdValues.length,
+    dd: drawdownEpisodes(trades),
+    ddStats: drawdownStats(trades),
   };
 }
 
@@ -103,6 +118,46 @@ export const REGISTRY: MetricDef[] = [
     // 回撤是"跌了多少"，展示成负数才不会和盈利混淆
     display: (v) => -Math.abs(v),
     hint: () => "按平仓顺序累计",
+  },
+  {
+    id: "currentDrawdown",
+    name: "当前回撤",
+    desc: "最新权益距历史最高点还差多少；0 表示正在新高",
+    category: "risk",
+    format: "money",
+    compute: (b) => (b.trades.length ? b.ddStats.current : null),
+    display: (v) => -Math.abs(v),
+    hint: (b) => (b.ddStats.current === 0 ? "正在历史新高" : "水下中"),
+  },
+  {
+    id: "avgRecovery",
+    name: "平均恢复",
+    desc: "每次回撤后，用几个交易日回到前高（只算已收复的）",
+    category: "risk",
+    format: "days",
+    compute: (b) => b.ddStats.avgRecoveryDays,
+    hint: (b) => {
+      const done = b.dd.filter((e) => e.recovered).length;
+      return `${done}/${b.dd.length} 段已收复`;
+    },
+  },
+  {
+    id: "longestDrawdown",
+    name: "最长回撤",
+    desc: "最久的一段回撤持续了几个交易日（含等待收复的时间）",
+    category: "risk",
+    format: "days",
+    compute: (b) => b.ddStats.longestDays,
+    hint: (b) => (b.dd.length ? (b.ddStats.longestRecovered ? "已收复" : "仍未收复") : "没有回撤"),
+  },
+  {
+    id: "timeUnderwater",
+    name: "水下时间",
+    desc: "权益低于前高的交易日占比；越低说明资金曲线越顺",
+    category: "risk",
+    format: "pct",
+    compute: (b) => (b.days.length ? b.ddStats.timeUnderwater : null),
+    hint: (b) => `${b.days.length} 个交易日`,
   },
   {
     id: "bestDay",
@@ -271,6 +326,8 @@ export function formatMetric(value: number | null | undefined, format: MetricFor
       return Number.isFinite(value) ? value.toFixed(2) : "∞";
     case "duration":
       return duration(value);
+    case "days":
+      return `${Math.round(value)} 天`;
     case "num":
     default:
       return Math.abs(value) >= 1000 ? value.toLocaleString("zh-CN") : String(Math.round(value * 100) / 100);
@@ -312,6 +369,7 @@ export function compareMetric(
   if (format === "pct") body = `${(abs * 100).toFixed(1)}%`;
   else if (format === "ratio") body = abs.toFixed(2);
   else if (format === "duration") body = duration(abs);
+  else if (format === "days") body = `${Math.round(abs)} 天`;
   else if (format === "money") body = abs.toFixed(2);
   else body = abs >= 1000 ? Math.round(abs).toLocaleString("zh-CN") : String(Math.round(abs * 100) / 100);
   return { delta, text: tone === "up" ? `+${body}` : tone === "down" ? `-${body}` : body, tone };

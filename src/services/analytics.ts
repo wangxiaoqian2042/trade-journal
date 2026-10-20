@@ -166,6 +166,145 @@ export function drawdownInfo(trades: Trade[]): DrawdownInfo {
   return { max, at, recoveryTrades };
 }
 
+export interface DrawdownEpisode {
+  /** 高点日期（这一段的起点） */
+  peakDate: string;
+  peakEquity: number;
+  /** 最深点的日期与权益 */
+  troughDate: string;
+  troughEquity: number;
+  /** 回撤幅度（正数） */
+  depth: number;
+  /** 高点 → 谷底经过的交易日数 */
+  downDays: number;
+  /** 谷底 → 收复前高经过的交易日数；未收复为 null */
+  recoveryDays: number | null;
+  /** 收复日期；未收复为 null */
+  recoveryDate: string | null;
+  /** 整段回撤持续多少个交易日（未收复则算到数据末尾） */
+  durationDays: number;
+  recovered: boolean;
+}
+
+/**
+ * 把权益曲线切成一段段回撤。
+ *
+ * 判定用"收盘权益"：某一笔平仓后权益跌破此前的最高点就算开始，
+ * 回到或超过那个最高点就算结束。交易日数按"有交易的自然日"数，
+ * 不是日历天数——不交易的周末不该算进恢复期。
+ */
+export function drawdownEpisodes(trades: Trade[]): DrawdownEpisode[] {
+  const sorted = sortTrades(trades);
+  if (!sorted.length) return [];
+
+  const dayIndex = new Map<string, number>();
+  for (const t of sorted) if (!dayIndex.has(t.date)) dayIndex.set(t.date, dayIndex.size);
+  const lastIdx = dayIndex.size - 1;
+
+  const out: DrawdownEpisode[] = [];
+  let equity = 0;
+  let peak = 0;
+  let peakDate = sorted[0].date;
+  let open: {
+    peakDate: string;
+    peakEquity: number;
+    troughDate: string;
+    troughEquity: number;
+  } | null = null;
+
+  const close = (recoveryDate: string | null) => {
+    if (!open) return;
+    const fromIdx = dayIndex.get(open.peakDate) ?? 0;
+    const troughIdx = dayIndex.get(open.troughDate) ?? fromIdx;
+    const recIdx = recoveryDate ? dayIndex.get(recoveryDate) ?? troughIdx : null;
+    const downDays = Math.max(0, troughIdx - fromIdx);
+    const recoveryDays = recIdx === null ? null : Math.max(0, recIdx - troughIdx);
+    out.push({
+      peakDate: open.peakDate,
+      peakEquity: open.peakEquity,
+      troughDate: open.troughDate,
+      troughEquity: open.troughEquity,
+      depth: open.peakEquity - open.troughEquity,
+      downDays,
+      recoveryDays,
+      recoveryDate,
+      durationDays: downDays + (recoveryDays ?? Math.max(0, lastIdx - troughIdx)),
+      recovered: recoveryDate !== null,
+    });
+    open = null;
+  };
+
+  for (const t of sorted) {
+    equity += t.pnl;
+    if (equity >= peak) {
+      close(t.date);
+      peak = equity;
+      peakDate = t.date;
+    } else if (!open) {
+      open = {
+        peakDate,
+        peakEquity: peak,
+        troughDate: t.date,
+        troughEquity: equity,
+      };
+    } else if (equity < open.troughEquity) {
+      open.troughDate = t.date;
+      open.troughEquity = equity;
+    }
+  }
+  close(null);
+  return out;
+}
+
+export interface DrawdownStats {
+  /** 回撤段数 */
+  episodes: number;
+  /** 当前距历史新高的回落（正数；0 = 正在新高） */
+  current: number;
+  /** 水下（权益低于前高）的交易日占比 0..1 */
+  timeUnderwater: number;
+  /** 已收复的回撤段，平均用几个交易日回到前高 */
+  avgRecoveryDays: number | null;
+  /** 最久的一段回撤（交易日） */
+  longestDays: number | null;
+  /** 最久那段是否已经收复 */
+  longestRecovered: boolean;
+}
+
+export function drawdownStats(trades: Trade[]): DrawdownStats {
+  const eps = drawdownEpisodes(trades);
+  const days = dailyPnl(trades);
+  const series = drawdownSeries(trades);
+  const current = series.length ? Math.abs(series[series.length - 1].dd) : 0;
+
+  let equity = 0;
+  let peak = 0;
+  let under = 0;
+  for (const d of days) {
+    equity += d.pnl;
+    if (equity > peak) peak = equity;
+    else if (equity < peak) under++;
+  }
+
+  const recovered = eps.filter((e) => e.recoveryDays !== null);
+  const avgRecoveryDays = recovered.length
+    ? recovered.reduce((a, e) => a + (e.recoveryDays as number), 0) / recovered.length
+    : null;
+  const longest = eps.reduce<DrawdownEpisode | null>(
+    (a, e) => (!a || e.durationDays > a.durationDays ? e : a),
+    null
+  );
+
+  return {
+    episodes: eps.length,
+    current,
+    timeUnderwater: days.length ? under / days.length : 0,
+    avgRecoveryDays,
+    longestDays: longest ? longest.durationDays : null,
+    longestRecovered: longest ? longest.recovered : false,
+  };
+}
+
 export interface GroupStat {
   key: string;
   count: number;

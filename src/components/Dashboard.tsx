@@ -8,6 +8,7 @@ import { DashboardGrid } from "./DashboardGrid";
 import {
   BarList,
   DrawdownChart,
+  DrawdownTable,
   EquityCurve,
   MetricBarList,
   MonthCalendar,
@@ -19,6 +20,7 @@ import { Trade } from "../types";
 
 const CATEGORY_LABELS = {
   performance: "表现",
+  risk: "风险",
   volume: "数量",
   average: "均值",
 } as const;
@@ -135,6 +137,20 @@ export function Dashboard(props: {
             dragHandleProps={drag}
           >
             <DrawdownChart trades={trades} cur={cur} onPick={onOpen ? openAt : undefined} />
+          </Section>
+        );
+      case "ddList":
+        return (
+          <Section
+            title="回撤记录"
+            extra={
+              <span className="tj-muted">
+                水下 {((snapshot.metrics.timeUnderwater?.value ?? 0) * 100).toFixed(0)}% 交易日
+              </span>
+            }
+            dragHandleProps={drag}
+          >
+            <DrawdownTable trades={trades} cur={cur} />
           </Section>
         );
       case "weekday":
@@ -262,7 +278,7 @@ export function Dashboard(props: {
                   恢复默认
                 </button>
               </div>
-              {(["performance", "volume", "average"] as const).map((cat) => (
+              {(["performance", "risk", "volume", "average"] as const).map((cat) => (
                 <div key={cat} className="tj-metric-group">
                   <div className="tj-metric-group-title">{CATEGORY_LABELS[cat]}</div>
                   {REGISTRY.filter((d) => d.category === cat).map((def) => {

@@ -1,6 +1,14 @@
 /* 逻辑自测：CSV 解析 + 指标计算，构建成 CJS 后用 node 跑 */
 import { parseCsv, detectColumns, buildDrafts, parseDate, parseNumber, normalizeDirection } from "../src/services/csv";
-import { summarize, equityCurve, groupBy, byWeekday, dailyPnl } from "../src/services/analytics";
+import {
+  summarize,
+  equityCurve,
+  groupBy,
+  byWeekday,
+  dailyPnl,
+  drawdownEpisodes,
+  drawdownStats,
+} from "../src/services/analytics";
 import { stringifyFrontmatter, parseFrontmatter } from "../src/services/frontmatter";
 import { Trade } from "../src/types";
 import { detectOrderExport, pairOrders, contractMultiplier } from "../src/services/pairing";
@@ -27,6 +35,7 @@ import {
   spanFor,
 } from "../src/services/layout";
 import { formatMetric, compareMetric, REGISTRY_BY_ID } from "../src/services/metrics";
+import { buildInsights, headline, highlights } from "../src/services/insights";
 
 let failed = 0;
 function ok(name: string, cond: boolean, extra?: unknown) {
@@ -455,6 +464,76 @@ delete cleared.setup;
 const reCleared = parseFrontmatter(stringifyFrontmatter(cleared, before.body));
 ok("清除策略后字段消失", reCleared.data.setup === undefined);
 ok("清除后正文仍在", reCleared.body.includes("自动配对"));
+
+
+/* ---- 回撤分段与恢复（P5） ---- */
+const ddTrades = [10, -5, -5, 10].map((p, i) => mkTrade(`2026-10-0${i + 1}`, p));
+const eps = drawdownEpisodes(ddTrades);
+ok("回撤切成 1 段", eps.length === 1, eps.length);
+ok("回撤幅度 10", Math.abs(eps[0].depth - 10) < 1e-9, eps[0].depth);
+ok("高点落在 10-01", eps[0].peakDate === "2026-10-01", eps[0].peakDate);
+ok("谷底落在 10-03", eps[0].troughDate === "2026-10-03", eps[0].troughDate);
+ok("下行 2 个交易日", eps[0].downDays === 2, eps[0].downDays);
+ok("恢复 1 个交易日", eps[0].recoveryDays === 1, eps[0].recoveryDays);
+ok("标记为已收复", eps[0].recovered === true);
+ok("整段持续 3 个交易日", eps[0].durationDays === 3, eps[0].durationDays);
+
+const openEps = drawdownEpisodes([10, -30, 5].map((p, i) => mkTrade(`2026-10-0${i + 1}`, p)));
+ok("未收复时 recoveryDays 为 null", openEps[0].recoveryDays === null);
+ok("未收复段 recovered=false", openEps[0].recovered === false);
+ok("未收复段算到数据末尾", openEps[0].durationDays === 2, openEps[0].durationDays);
+
+const ddS = drawdownStats(ddTrades);
+ok("水下占比 2/4", Math.abs(ddS.timeUnderwater - 0.5) < 1e-9, ddS.timeUnderwater);
+ok("平均恢复 1 天", ddS.avgRecoveryDays === 1, ddS.avgRecoveryDays);
+ok("最长回撤 3 天", ddS.longestDays === 3, ddS.longestDays);
+ok("当前已回到新高", ddS.current === 0, ddS.current);
+
+/* ---- 风险指标 ---- */
+const ddSnap = buildSnapshot(ddTrades, emptyQuery("all"), T);
+ok("平均恢复指标格式化", formatMetric(ddSnap.metrics.avgRecovery.value, "days") === "1 天", formatMetric(ddSnap.metrics.avgRecovery.value, "days"));
+ok("水下时间指标 50%", Math.abs((ddSnap.metrics.timeUnderwater.value ?? 0) - 0.5) < 1e-9, ddSnap.metrics.timeUnderwater.value);
+ok("当前回撤展示为 0", ddSnap.metrics.currentDrawdown.value === 0, ddSnap.metrics.currentDrawdown.value);
+ok("风险类指标已注册", REGISTRY_BY_ID.get("longestDrawdown")?.category === "risk");
+
+const stillDown = buildSnapshot([mkTrade("2026-10-01", 100), mkTrade("2026-10-02", -40)], emptyQuery("all"), T);
+ok("回撤中时当前回撤为 -40", Math.abs((stillDown.metrics.currentDrawdown.value ?? 0) + 40) < 1e-9, stillDown.metrics.currentDrawdown.value);
+ok("回撤中时不报已恢复", stillDown.metrics.avgRecovery.value === null, stillDown.metrics.avgRecovery.value);
+
+/* ---- 概要结论 ---- */
+const smallSnap = buildSnapshot(
+  [mkTrade("2026-10-01", 100), mkTrade("2026-10-02", -50)],
+  emptyQuery("all"),
+  T
+);
+const insIds = buildInsights(smallSnap, "¥").map((i) => i.id);
+ok("小样本给出提示", insIds.includes("sample"), insIds.join(","));
+ok("止损全缺时明说 R 倍数不可用", insIds.includes("stopCoverage"), insIds.join(","));
+ok("单一策略占满利润时提示集中度", insIds.includes("concentration"), insIds.join(","));
+
+const badSnap = buildSnapshot(
+  [-10, -10, -10, -10, 5, 20].map((p, i) => mkTrade(`2026-11-0${i + 1}`, p)),
+  emptyQuery("all"),
+  T
+);
+const badIns = buildInsights(badSnap, "¥");
+ok("问题类结论排在最前", badIns[0]?.tone === "bad", badIns.map((i) => i.tone).join(","));
+ok("连亏 4 笔被抓到", badIns.some((i) => i.id === "lossStreak"), badIns.map((i) => i.id).join(","));
+
+const line = headline(smallSnap, "¥");
+ok("概要一句话含笔数", line.includes("2 笔"), line);
+ok("概要一句话含胜率", line.includes("胜率"), line);
+
+const hlTrades = [
+  mkTrade("2026-10-01", 100),
+  mkTrade("2026-10-02", 120),
+  { ...mkTrade("2026-10-03", -100), setup: "反转" },
+  { ...mkTrade("2026-10-04", -200), setup: "反转" },
+];
+const hl = highlights(hlTrades);
+ok("强项挑出赚钱策略", hl.strong[0]?.key === "ORB", hl.strong.map((h) => h.key).join(","));
+ok("短板挑出亏钱策略", hl.weak[0]?.key === "反转", hl.weak.map((h) => h.key).join(","));
+ok("单笔策略不算规律", highlights([mkTrade("2026-10-01", 100)]).strong.length === 0);
 
 console.log(failed === 0 ? "\n全部通过" : `\n${failed} 项失败`);
 process.exit(failed === 0 ? 0 : 1);

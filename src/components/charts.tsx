@@ -1,5 +1,11 @@
 import React, { useMemo, useState } from "react";
-import { CurvePoint, DayPnl, GroupStat, drawdownSeries } from "../services/analytics";
+import {
+  CurvePoint,
+  DayPnl,
+  GroupStat,
+  drawdownEpisodes,
+  drawdownSeries,
+} from "../services/analytics";
 import { Trade } from "../types";
 import { fmtPct, money, toneClass } from "./ui";
 
@@ -728,3 +734,53 @@ export function RecentTrades(props: {
     </table>
   );
 }
+
+/* ============ 回撤记录：每段回撤的深度、耗时、是否收复 ============ */
+export function DrawdownTable(props: {
+  trades: Trade[];
+  cur: string;
+  /** 最多显示几段（按深度排序） */
+  limit?: number;
+}) {
+  const { trades, cur, limit = 5 } = props;
+  const all = useMemo(() => drawdownEpisodes(trades), [trades]);
+  const episodes = useMemo(
+    () => all.slice().sort((a, b) => b.depth - a.depth).slice(0, limit),
+    [all, limit]
+  );
+
+  if (!episodes.length) return <div className="tj-chart-empty">这段时间没有回撤</div>;
+
+  return (
+    <div className="tj-ddtable">
+      <div className="tj-dd-head">
+        <span>幅度</span>
+        <span>高 → 谷</span>
+        <span className="tj-num">下行</span>
+        <span className="tj-num">恢复</span>
+        <span>状态</span>
+      </div>
+      {episodes.map((e) => (
+        <div className="tj-dd-row" key={e.peakDate + e.troughDate + e.depth}>
+          <span className="tj-dd-depth tj-neg">{money(-e.depth, cur)}</span>
+          <span className="tj-dd-span">
+            {e.peakDate.slice(5)}→{e.troughDate.slice(5)}
+          </span>
+          <span className="tj-num">{e.downDays} 天</span>
+          <span className="tj-num">
+            {e.recoveryDays === null ? "—" : `${e.recoveryDays} 天`}
+          </span>
+          <span>
+            <span className={`tj-dd-tag ${e.recovered ? "is-ok" : "is-live"}`}>
+              {e.recovered ? "已收复" : "进行中"}
+            </span>
+          </span>
+        </div>
+      ))}
+      <div className="tj-dd-foot">
+        按深度排序，共 {all.length} 段回撤
+      </div>
+    </div>
+  );
+}
+

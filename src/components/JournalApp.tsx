@@ -17,6 +17,7 @@ import {
 import { buildSnapshot } from "../services/aggregate";
 import { WidgetLayout } from "../services/layout";
 import { Dashboard } from "./Dashboard";
+import { Overview } from "./Overview";
 import { TradeTable } from "./TradeTable";
 import { ImportPanel } from "./ImportPanel";
 import {
@@ -28,7 +29,7 @@ import {
   toneClass,
 } from "./ui";
 
-export type Tab = "dashboard" | "trades" | "import";
+export type Tab = "overview" | "dashboard" | "trades" | "import";
 
 const PRESETS: Preset[] = [
   "today",
@@ -169,6 +170,7 @@ export function JournalApp(props: JournalAppProps) {
               value={tab}
               onChange={setTab}
               options={[
+                { value: "overview", label: "速览" },
                 { value: "dashboard", label: "仪表盘" },
                 { value: "trades", label: "交易记录" },
                 { value: "import", label: "导入" },
@@ -281,6 +283,18 @@ export function JournalApp(props: JournalAppProps) {
               }}
             />
           )}
+
+          {tab === "overview" &&
+            (trades.length === 0 ? (
+              <Empty>
+                <p>还没有交易记录。</p>
+                <button type="button" className="tj-btn primary" onClick={() => setTab("import")}>
+                  导入 CSV
+                </button>
+              </Empty>
+            ) : (
+              <Overview snapshot={snapshot} cur={currency} />
+            ))}
 
           {tab === "dashboard" &&
             (trades.length === 0 ? (
