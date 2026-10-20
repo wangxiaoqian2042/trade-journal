@@ -8,6 +8,7 @@ import {
   dailyPnl,
   drawdownEpisodes,
   drawdownStats,
+  classifyPnl,
 } from "../src/services/analytics";
 import { stringifyFrontmatter, parseFrontmatter } from "../src/services/frontmatter";
 import { Trade } from "../src/types";
@@ -36,6 +37,7 @@ import {
 } from "../src/services/layout";
 import { formatMetric, compareMetric, REGISTRY_BY_ID } from "../src/services/metrics";
 import { buildInsights, headline, highlights } from "../src/services/insights";
+import { auditTrades, hasGap } from "../src/services/quality";
 
 let failed = 0;
 function ok(name: string, cond: boolean, extra?: unknown) {
@@ -534,6 +536,86 @@ const hl = highlights(hlTrades);
 ok("强项挑出赚钱策略", hl.strong[0]?.key === "ORB", hl.strong.map((h) => h.key).join(","));
 ok("短板挑出亏钱策略", hl.weak[0]?.key === "反转", hl.weak.map((h) => h.key).join(","));
 ok("单笔策略不算规律", highlights([mkTrade("2026-10-01", 100)]).strong.length === 0);
+
+
+/* ---- 打平区间（P5-3） ---- */
+ok("阈值内算打平", classifyPnl(5, 10) === "be", classifyPnl(5, 10));
+ok("刚过阈值算赢", classifyPnl(11, 10) === "win");
+ok("负向过阈值算亏", classifyPnl(-11, 10) === "loss");
+ok("默认阈值 0 时 0 算打平", classifyPnl(0) === "be");
+
+const beTrades = [
+  { ...mkTrade("2026-10-01", 100), outcome: "win" as const },
+  { ...mkTrade("2026-10-02", 3), outcome: "be" as const },
+  { ...mkTrade("2026-10-03", -2), outcome: "be" as const },
+  { ...mkTrade("2026-10-04", -50), outcome: "loss" as const },
+];
+const beSum = summarize(beTrades);
+ok("打平不计入胜", beSum.wins === 1, beSum.wins);
+ok("打平不计入负", beSum.losses === 1, beSum.losses);
+ok("打平单独计数", beSum.breakeven === 2, beSum.breakeven);
+ok("胜率排除打平", Math.abs(beSum.winRate - 0.5) < 1e-9, beSum.winRate);
+ok("毛利只算赢家", beSum.grossProfit === 100, beSum.grossProfit);
+
+const streakTrades = [
+  { ...mkTrade("2026-10-01", 100), outcome: "win" as const },
+  { ...mkTrade("2026-10-02", 1), outcome: "be" as const },
+  { ...mkTrade("2026-10-03", 100), outcome: "win" as const },
+];
+ok("打平不打断连胜", summarize(streakTrades).maxWinStreak === 2, summarize(streakTrades).maxWinStreak);
+
+/* ---- 数据体检（P5-1） ---- */
+const gapTrade = {
+  ...mkTrade("2026-10-01", 10),
+  setup: "",
+  stop: null,
+  exitTime: undefined,
+  holdSeconds: null,
+  tags: ["trade"],
+  notes: "",
+};
+const fullTrade = {
+  ...mkTrade("2026-10-02", 20),
+  setup: "突破",
+  stop: 99,
+  exitTime: "22:10:00",
+  holdSeconds: 600,
+  tags: ["突破"],
+  notes: "按计划进的，回踩不破加了一次",
+};
+ok("缺策略能识别", hasGap(gapTrade, "setup"));
+ok("缺止损能识别", hasGap(gapTrade, "stop"));
+ok("缺平仓时间能识别", hasGap(gapTrade, "exitTime"));
+ok("只有自动标签也算缺标签", hasGap(gapTrade, "tags"));
+ok("正文过短算没复盘", hasGap(gapTrade, "notes"));
+ok("字段齐全不算缺", !hasGap(fullTrade, "setup") && !hasGap(fullTrade, "tags") && !hasGap(fullTrade, "notes"));
+
+const audit = auditTrades([gapTrade, { ...gapTrade }, fullTrade]);
+ok("体检按缺口统计", audit.every((g) => g.count === 2), audit.map((g) => g.count).join(","));
+ok("体检按影响面排序", audit[0].count >= audit[audit.length - 1].count);
+ok("全缺时不返回 0 项", audit.length === 5, audit.length);
+
+const gapQuery = { preset: "all" as const, filters: { gaps: ["setup" as const] } };
+ok("按缺口筛选", filterTrades([gapTrade, fullTrade], gapQuery, null).length === 1);
+const twoGapQuery = {
+  preset: "all" as const,
+  filters: { gaps: ["setup" as const, "stop" as const] },
+};
+ok("多个缺口取交集", filterTrades([gapTrade, fullTrade], twoGapQuery, null).length === 1);
+ok("体检条件算有效查询", hasActiveQuery(gapQuery) === true);
+ok("下钻会清掉体检条件", applyDrill(gapQuery, { kind: "symbol", value: "MNQ" }).filters.gaps === undefined);
+
+const gapSnap = buildSnapshot(
+  [
+    { ...mkTrade("2026-10-01", 100), setup: "" },
+    { ...mkTrade("2026-10-02", -50), setup: "" },
+    { ...mkTrade("2026-10-03", 80), setup: "" },
+    { ...mkTrade("2026-10-04", 20), setup: "" },
+  ],
+  emptyQuery("all"),
+  T
+);
+ok("速览页提示缺策略", buildInsights(gapSnap, "¥").some((i) => i.id === "setupGap"));
 
 console.log(failed === 0 ? "\n全部通过" : `\n${failed} 项失败`);
 process.exit(failed === 0 ? 0 : 1);

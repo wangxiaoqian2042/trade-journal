@@ -171,6 +171,9 @@ expect("每行都有勾选框", (tableHtml.match(/type="checkbox"/g) || []).leng
 expect("全选按钮带笔数", tableHtml.includes(`全选 ${trades.length} 笔`));
 expect("未选中时不出删除按钮", !tableHtml.includes("删除所选"));
 expect("有勾选列", tableHtml.includes("tj-check-col"));
+expect("交易记录页有数据体检条", tableHtml.includes("tj-quality") && tableHtml.includes("数据体检"));
+expect("体检条列出缺止损", tableHtml.includes("缺止损"));
+expect("体检条列出缺标签", tableHtml.includes("缺标签"));
 
 const noDeleteHtml = renderToStaticMarkup(
   React.createElement(JournalApp, {

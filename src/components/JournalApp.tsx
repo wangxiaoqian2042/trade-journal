@@ -16,6 +16,7 @@ import {
 } from "../services/query";
 import { buildSnapshot } from "../services/aggregate";
 import { WidgetLayout } from "../services/layout";
+import { GapKind, GAP_META, auditTrades } from "../services/quality";
 import { Dashboard } from "./Dashboard";
 import { Overview } from "./Overview";
 import { TradeTable } from "./TradeTable";
@@ -85,6 +86,14 @@ export function JournalApp(props: JournalAppProps) {
   const snapshot = useMemo(() => buildSnapshot(trades, query), [trades, query]);
   const filtered = snapshot.trades;
   const totalPnl = snapshot.base.s.netPnl;
+
+  // 体检计数要跟着当前筛选走（除了体检条件本身），否则数字对不上列表
+  const gapScope = useMemo(
+    () => filterTrades(trades, { ...query, filters: { ...query.filters, gaps: [] } }, snapshot.range),
+    [trades, query, snapshot.range]
+  );
+  const gaps = useMemo(() => auditTrades(gapScope), [gapScope]);
+  const activeGaps = query.filters.gaps ?? [];
   const allDays = useMemo(() => dailyPnl(trades), [trades]);
 
   const f = query.filters;
@@ -138,6 +147,16 @@ export function JournalApp(props: JournalAppProps) {
     setQuery((q) => applyDrill(q, d));
     setDrillFrom(drillLabel(d));
     setTab("trades");
+  };
+
+  /** 体检标签：点一下只看这类，再点取消；可叠加（同时缺两个字段） */
+  const toggleGap = (kind: GapKind) => {
+    setDrillFrom(null);
+    setQuery((q) => {
+      const cur = q.filters.gaps ?? [];
+      const next = cur.includes(kind) ? cur.filter((x) => x !== kind) : [...cur, kind];
+      return { ...q, filters: { ...q.filters, gaps: next.length ? next : undefined } };
+    });
   };
 
   const clearAll = () => {
@@ -328,6 +347,39 @@ export function JournalApp(props: JournalAppProps) {
               </Empty>
             ) : (
               <>
+                {gaps.length > 0 && (
+                  <div className="tj-quality">
+                    <span className="tj-quality-label">数据体检</span>
+                    <div className="tj-quality-chips">
+                      {gaps.map((g) => (
+                        <button
+                          key={g.kind}
+                          type="button"
+                          className={`tj-gap ${activeGaps.includes(g.kind) ? "is-on" : ""}`}
+                          title={g.hint}
+                          onClick={() => toggleGap(g.kind)}
+                        >
+                          {g.label}
+                          <b>{g.count}</b>
+                        </button>
+                      ))}
+                    </div>
+                    <span className="tj-quality-note">{gapScope.length} 笔待整理</span>
+                  </div>
+                )}
+
+                {activeGaps.length > 0 && (
+                  <div className="tj-drill-bar">
+                    <span>
+                      只看：<b>{activeGaps.map((k) => GAP_META[k].label).join(" + ")}</b> · 命中{" "}
+                      {filtered.length} 笔
+                    </span>
+                    <button type="button" className="tj-link" onClick={() => patch({ gaps: undefined })}>
+                      清除条件
+                    </button>
+                  </div>
+                )}
+
                 {drillFrom && (
                   <div className="tj-drill-bar">
                     <span>

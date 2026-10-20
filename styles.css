@@ -2085,3 +2085,64 @@ td.tj-num {
     display: none;
   }
 }
+
+/* ============ 数据体检条 ============ */
+.tj-quality {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px 10px;
+  margin: 4px 0 8px;
+  border: 1px dashed var(--tj-line-strong);
+  border-radius: 8px;
+  background: var(--tj-panel);
+}
+
+.tj-quality-label {
+  font-size: 11px;
+  color: var(--tj-muted);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.tj-quality-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.tj-gap {
+  font: inherit;
+  font-size: 12px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--tj-line-strong);
+  background: var(--tj-bg);
+  color: var(--tj-fg);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.tj-gap b {
+  margin-left: 5px;
+  font-weight: 650;
+  color: var(--tj-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.tj-gap:hover {
+  border-color: var(--tj-accent);
+}
+
+.tj-gap.is-on {
+  background: color-mix(in srgb, var(--tj-accent) 12%, transparent);
+  border-color: var(--tj-accent);
+  color: var(--tj-accent);
+}
+
+.tj-quality-note {
+  margin-left: auto;
+  font-size: 11.5px;
+  color: var(--tj-muted);
+}

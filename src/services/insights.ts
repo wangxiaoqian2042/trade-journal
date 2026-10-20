@@ -1,6 +1,7 @@
 import { Trade } from "../types";
 import { DashboardSnapshot } from "./aggregate";
 import { GroupStat, byWeekday, groupBy } from "./analytics";
+import { auditTrades } from "./quality";
 
 /**
  * 概要视图的「结论层」。
@@ -197,6 +198,17 @@ export function buildInsights(s: DashboardSnapshot, cur: string): Insight[] {
         detail: `${fmtMoney(b.s.fees, cur)} 手续费 / ${fmtMoney(b.s.grossProfit, cur)} 毛利`,
       });
     }
+  }
+
+  // 缺策略：直接说清"这一维现在没有信息量"
+  const setupGap = auditTrades(b.trades).find((g) => g.kind === "setup");
+  if (setupGap && setupGap.count >= 3 && setupGap.ratio >= 0.3) {
+    out.push({
+      id: "setupGap",
+      tone: "info",
+      text: `${setupGap.count} 笔还没填策略`,
+      detail: "策略维度的强项/短板现在只能看到一个「未分类」，补齐后才有对比价值",
+    });
   }
 
   // 数据缺口要摆明，不能让用户以为指标坏了

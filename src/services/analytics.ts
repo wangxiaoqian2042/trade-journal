@@ -1,4 +1,4 @@
-import { Trade } from "../types";
+import { Outcome, Trade } from "../types";
 
 export interface Summary {
   count: number;
@@ -20,6 +20,26 @@ export interface Summary {
   maxWinStreak: number;
   maxLossStreak: number;
   avgHold?: never;
+}
+
+
+/**
+ * 打平区间。
+ *
+ * 手续费和滑点会让一笔"其实没赚"的单子显示成小赚，如果直接算进胜率，
+ * 胜率会虚高、盈亏比会失真。|pnl| ≤ breakEven 的交易统一归为打平，
+ * 既不进分子也不进分母。
+ */
+export function classifyPnl(pnl: number, breakEven = 0): Outcome {
+  const be = Math.abs(breakEven);
+  if (pnl > be) return "win";
+  if (pnl < -be) return "loss";
+  return "be";
+}
+
+/** 优先用读取时算好的 outcome（已带打平区间），没有就按 0 阈值现算 */
+export function outcomeOf(t: Pick<Trade, "pnl" | "outcome">): Outcome {
+  return t.outcome ?? classifyPnl(t.pnl);
 }
 
 export function sortTrades(trades: Trade[]): Trade[] {
@@ -52,19 +72,21 @@ export function summarize(trades: Trade[]): Summary {
   for (const t of sorted) {
     net += t.pnl;
     fees += t.fees;
-    if (t.pnl > 0) {
+    const outcome = outcomeOf(t);
+    if (outcome === "win") {
       grossProfit += t.pnl;
       wins++;
       winStreak++;
       lossStreak = 0;
       maxWinStreak = Math.max(maxWinStreak, winStreak);
-    } else if (t.pnl < 0) {
+    } else if (outcome === "loss") {
       grossLoss += Math.abs(t.pnl);
       losses++;
       lossStreak++;
       winStreak = 0;
       maxLossStreak = Math.max(maxLossStreak, lossStreak);
     } else {
+      // 打平：不加减连胜连亏，只记一笔
       breakeven++;
     }
     best = Math.max(best, t.pnl);

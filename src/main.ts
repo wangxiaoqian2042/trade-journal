@@ -16,6 +16,8 @@ interface TradeJournalSettings {
   metricCards: string[];
   /** 仪表盘组件顺序与尺寸 */
   layout: WidgetLayout[];
+  /** 打平区间：|pnl| ≤ 这个值算打平，不计入胜负 */
+  breakEven: number;
 }
 
 const DEFAULT_SETTINGS: TradeJournalSettings = {
@@ -31,6 +33,7 @@ const DEFAULT_SETTINGS: TradeJournalSettings = {
     "maxDrawdown",
   ],
   layout: DEFAULT_LAYOUT,
+  breakEven: 0,
 };
 
 export default class TradeJournalPlugin extends Plugin {
@@ -42,7 +45,7 @@ export default class TradeJournalPlugin extends Plugin {
 
   async onload(): Promise<void> {
     await this.loadSettings();
-    this.store = new TradeStore(this.app, this.settings.folder);
+    this.store = new TradeStore(this.app, this.settings.folder, this.settings.breakEven);
 
     this.registerView(VIEW_TYPE, (leaf: WorkspaceLeaf) => new JournalView(leaf, this));
 
@@ -125,11 +128,20 @@ export default class TradeJournalPlugin extends Plugin {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
     // 配置可能来自旧版本或被手改过，统一清洗一次
     this.settings.layout = normalizeLayout(this.settings.layout);
+    const be = Number(this.settings.breakEven);
+    this.settings.breakEven = Number.isFinite(be) && be > 0 ? be : 0;
   }
 
   async saveSettings(): Promise<void> {
     await this.saveData(this.settings);
-    this.store = new TradeStore(this.app, this.settings.folder);
+    this.store = new TradeStore(this.app, this.settings.folder, this.settings.breakEven);
+  }
+
+  /** 设置改了影响已渲染的数据时，让所有打开的视图重新读一遍 */
+  reloadViews(): void {
+    for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE)) {
+      if (leaf.view instanceof JournalView) void leaf.view.reload();
+    }
   }
 }
 
@@ -181,9 +193,25 @@ class TradeJournalSettingTab extends PluginSettingTab {
           .onChange(async (v) => {
             this.plugin.settings.currency = v.trim() || "¥";
             await this.plugin.saveSettings();
-            for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE)) {
-              if (leaf.view instanceof JournalView) void leaf.view.reload();
-            }
+            this.plugin.reloadViews();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("打平区间")
+      .setDesc(
+        "单笔盈亏落在这个范围内算打平，不计入胜率、也不打断连胜连亏。填 0 表示只有刚好 0 才算平。" +
+          "期货建议填 1–2 个最小跳动乘合约乘数（MNQ 约 10，MES 约 6），把手续费级别的噪音挡掉。"
+      )
+      .addText((t) =>
+        t
+          .setPlaceholder("0")
+          .setValue(String(this.plugin.settings.breakEven || 0))
+          .onChange(async (v) => {
+            const n = Number(v.replace(/[^0-9.]/g, ""));
+            this.plugin.settings.breakEven = Number.isFinite(n) && n > 0 ? n : 0;
+            await this.plugin.saveSettings();
+            this.plugin.reloadViews();
           })
       );
 

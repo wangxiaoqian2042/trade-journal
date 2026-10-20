@@ -1,4 +1,5 @@
 import { Direction, Session, Trade } from "../types";
+import { GapKind, hasGap } from "./quality";
 
 export type { Session };
 
@@ -34,6 +35,8 @@ export interface TradeFilters {
   directions?: Direction[];
   /** 星期过滤：0=周日 … 6=周六；空数组或省略 = 全部 */
   weekdays?: number[];
+  /** 数据体检：只保留同时缺这些字段的交易 */
+  gaps?: GapKind[];
   /** 额外的手工日期边界，与时间档取交集（用于自定义区间） */
   from?: string;
   to?: string;
@@ -240,6 +243,7 @@ export function filterTrades(trades: Trade[], q: DashboardQuery, range?: DateRan
     if (!inList(f.accounts, t.account)) return false;
     if (f.directions && f.directions.length && !f.directions.includes(t.direction)) return false;
     if (f.weekdays && f.weekdays.length && !f.weekdays.includes(weekdayOf(t.date))) return false;
+    if (f.gaps && f.gaps.length && !f.gaps.every((g) => hasGap(t, g))) return false;
     return true;
   });
 }
@@ -255,6 +259,7 @@ export function hasActiveQuery(q: DashboardQuery): boolean {
       (f.setups && f.setups.length) ||
       (f.accounts && f.accounts.length) ||
       (f.weekdays && f.weekdays.length) ||
+      (f.gaps && f.gaps.length) ||
       (f.directions && f.directions.length)
   );
 }
@@ -301,22 +306,24 @@ export function drillLabel(d: Drill): string {
  * 已有的其它条件保留，这样"先按标的筛，再点某天的"这种连续下钻是叠加而不是重置。
  */
 export function applyDrill(q: DashboardQuery, d: Drill): DashboardQuery {
+  // 下钻是一次新的"看这一块"，不应该还挂着上一次的体检条件
+  const f: TradeFilters = { ...q.filters, gaps: undefined };
   switch (d.kind) {
     case "date":
       return {
         preset: "custom",
         customFrom: d.date,
         customTo: d.date,
-        filters: { ...q.filters, from: undefined, to: undefined },
+        filters: { ...f, from: undefined, to: undefined },
       };
     case "symbol":
-      return { ...q, filters: { ...q.filters, symbols: [d.value] } };
+      return { ...q, filters: { ...f, symbols: [d.value] } };
     case "setup":
-      return { ...q, filters: { ...q.filters, setups: [d.value] } };
+      return { ...q, filters: { ...f, setups: [d.value] } };
     case "direction":
-      return { ...q, filters: { ...q.filters, directions: [d.value] } };
+      return { ...q, filters: { ...f, directions: [d.value] } };
     case "weekday":
-      return { ...q, filters: { ...q.filters, weekdays: [d.value] } };
+      return { ...q, filters: { ...f, weekdays: [d.value] } };
   }
 }
 

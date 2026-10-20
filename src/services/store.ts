@@ -2,6 +2,7 @@ import { App, TFile, TFolder, normalizePath } from "obsidian";
 import { Session, Trade, TradeDraft, tradeKey } from "../types";
 import { parseFrontmatter, stringifyFrontmatter } from "./frontmatter";
 import { sessionOf } from "./query";
+import { classifyPnl } from "./analytics";
 
 function num(v: unknown, fallback = 0): number {
   if (typeof v === "number" && Number.isFinite(v)) return v;
@@ -43,7 +44,12 @@ function holdSeconds(date: string, entryTime: string, exitTime: string): number 
   return diff;
 }
 
-function toTrade(path: string, data: Record<string, unknown>, body: string): Trade | null {
+function toTrade(
+  path: string,
+  data: Record<string, unknown>,
+  body: string,
+  breakEven = 0
+): Trade | null {
   const symbol = str(data.symbol).trim();
   if (!symbol) return null;
   const direction = str(data.direction).toLowerCase() === "short" ? "short" : "long";
@@ -51,6 +57,7 @@ function toTrade(path: string, data: Record<string, unknown>, body: string): Tra
   const exitTime = str(data.exitTime).trim();
   const storedHold = data.holdSeconds === undefined || data.holdSeconds === null ? null : num(data.holdSeconds);
   const session: Session = sessionOf(time);
+  const pnl = num(data.pnl);
 
   return {
     id: path,
@@ -62,7 +69,7 @@ function toTrade(path: string, data: Record<string, unknown>, body: string): Tra
     exit: num(data.exit),
     quantity: num(data.quantity),
     fees: num(data.fees),
-    pnl: num(data.pnl),
+    pnl,
     setup: str(data.setup),
     account: str(data.account),
     stop: data.stop === undefined || data.stop === null ? null : num(data.stop),
@@ -70,13 +77,14 @@ function toTrade(path: string, data: Record<string, unknown>, body: string): Tra
     exitTime: exitTime || undefined,
     holdSeconds: storedHold ?? (exitTime ? holdSeconds(str(data.date), time, exitTime) : null),
     session,
+    outcome: classifyPnl(pnl, breakEven),
     tags: Array.isArray(data.tags) ? data.tags.map((t) => String(t)) : [],
     notes: body.trim(),
   };
 }
 
 export class TradeStore {
-  constructor(private app: App, public folder: string) {}
+  constructor(private app: App, public folder: string, public breakEven = 0) {}
 
   get basePath(): string {
     return normalizePath(this.folder.trim() || "Trading");
@@ -117,7 +125,7 @@ export class TradeStore {
           raw = await this.app.vault.read(file);
         }
         const { data, body } = parseFrontmatter(raw);
-        const t = toTrade(file.path, data, body);
+        const t = toTrade(file.path, data, body, this.breakEven);
         if (t) trades.push(t);
       } catch {
         // 单个文件坏了不影响整体
