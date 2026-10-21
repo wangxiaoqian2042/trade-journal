@@ -19,6 +19,7 @@ const px = (n: number) => (Number.isFinite(n) ? String(Number(n.toFixed(4))) : "
 const FIELD_ORDER: FieldKey[] = [
   "date",
   "time",
+  "exitTime",
   "symbol",
   "direction",
   "quantity",

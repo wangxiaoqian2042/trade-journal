@@ -85,6 +85,7 @@
 |---|---|
 | 日期 | date, 日期, trade date, 开仓时间, 平仓时间, entry time |
 | 时间 | time, 时间 |
+| 平仓时间 | exited at, exit time, closed at, 平仓时间（可选，用来算持仓时长） |
 | 标的 | symbol, ticker, instrument, 代码, 标的, 品种 |
 | 方向 | side, direction, action, 方向, 多空, 买卖 |
 | 数量 | qty, quantity, size, shares, volume, 数量, 手数 |

@@ -3,6 +3,7 @@ import { Direction, TradeDraft } from "../types";
 export type FieldKey =
   | "date"
   | "time"
+  | "exitTime"
   | "symbol"
   | "direction"
   | "quantity"
@@ -20,6 +21,7 @@ export type FieldKey =
 export const FIELD_LABELS: Record<FieldKey, string> = {
   date: "日期",
   time: "时间",
+  exitTime: "平仓时间",
   symbol: "标的",
   direction: "方向",
   quantity: "数量",
@@ -38,6 +40,8 @@ export const FIELD_LABELS: Record<FieldKey, string> = {
 const ALIASES: Record<FieldKey, string[]> = {
   date: ["date", "日期", "trade date", "trade_date", "entry date", "open date", "opened", "opened at", "openedat", "entered", "enteredat", "entered at", "exit date", "closed at", "close date", "close time", "date/time", "datetime", "time", "日期时间", "开仓时间", "平仓时间", "entry time", "open time", "exit time", "trade day", "trade_day", "tradeday"],
   time: ["time", "时间", "clock", "hour", "entry time", "开仓时间"],
+  // 只取时刻，用于算持仓时长；整列是日期时间也认
+  exitTime: ["exited at", "exitedat", "exit time", "exit datetime", "closed at", "close time", "exit date", "平仓时间", "出场时间", "平仓日期时间"],
   symbol: ["symbol", "ticker", "instrument", "contract", "market", "pair", "代码", "标的", "品种", "合约", "股票"],
   direction: ["direction", "side", "type", "action", "position", "long/short", "b/s", "方向", "多空", "买卖", "交易方向"],
   quantity: ["quantity", "qty", "size", "shares", "volume", "contracts", "lots", "units", "数量", "手数", "股数", "成交量"],
@@ -305,6 +309,15 @@ export function buildDrafts(
       return;
     }
 
+    // 平仓时刻：从整串日期时间里抠出 HH:mm[:ss]，保留秒才能算准短线持仓
+    const rawExit = (get(r, "exitTime") ?? "").trim();
+    const exitClock = (() => {
+      const m = /(\d{1,2}):(\d{2})(?::(\d{2}))?/.exec(rawExit);
+      if (!m) return "";
+      const hh = m[1].padStart(2, "0");
+      return m[3] ? `${hh}:${m[2]}:${m[3]}` : `${hh}:${m[2]}`;
+    })();
+
     const direction = normalizeDirection(get(r, "direction")) ?? "long";
     const quantity = parseNumber(get(r, "quantity")) ?? 0;
     const entry = parseNumber(get(r, "entry")) ?? 0;
@@ -336,6 +349,7 @@ export function buildDrafts(
     drafts.push({
       date: finalDate,
       time,
+      exitTime: exitClock || undefined,
       symbol,
       direction,
       entry,

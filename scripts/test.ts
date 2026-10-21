@@ -122,6 +122,7 @@ ok("驼峰 方向=Type", tvMap.direction === 9, tvMap);
 ok("驼峰 标的=ContractName", tvMap.symbol === 1, tvMap);
 ok("驼峰 不误判止盈", tvMap.target === undefined, tvMap.target);
 ok("驼峰 两段手续费分开认", tvMap.fees === 6 && tvMap.fees2 === 11, `${tvMap.fees},${tvMap.fees2}`);
+ok("驼峰 平仓时间=ExitedAt", tvMap.exitTime === 3, tvMap.exitTime);
 
 // 带 Commissions 列时两段手续费相加：1.44 + 1.00
 const tvFull = parseCsv(
@@ -137,6 +138,7 @@ const tvRows = parseCsv(
 const tvBuilt = buildDrafts(tvRows.slice(1), tvRows[0], tvMap);
 ok("驼峰数据可导入", tvBuilt.drafts.length === 1, tvBuilt.errors);
 ok("驼峰时间解析", tvBuilt.drafts[0]?.time === "21:34", tvBuilt.drafts[0]?.time);
+ok("驼峰平仓时刻保留秒", tvBuilt.drafts[0]?.exitTime === "21:34:33", tvBuilt.drafts[0]?.exitTime);
 ok("驼峰盈亏扣费", tvBuilt.drafts[0]?.pnl === -54.44, tvBuilt.drafts[0]?.pnl);
 
 const tvBuilt2 = buildDrafts(tvRows.slice(1), tvRows[0], tvMap, { pnlIncludesFees: true });
