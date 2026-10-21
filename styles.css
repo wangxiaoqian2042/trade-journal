@@ -2216,3 +2216,10 @@ td.tj-num {
   flex-wrap: wrap;
   margin: 12px 0 6px;
 }
+
+.tj-account-quick {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}

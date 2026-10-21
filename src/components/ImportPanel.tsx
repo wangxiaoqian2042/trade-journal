@@ -44,11 +44,8 @@ export function ImportPanel(props: {
   const [feesInPnl, setFeesInPnl] = useState(false);
   const [modeOverride, setModeOverride] = useState<Mode | null>(null);
   const [feePerSide, setFeePerSide] = useState(0.72);
-  const [account, setAccount] = useState(() => {
-    // 只有一个历史账户时默认选它，省得每次导入都要重填
-    const known = [...new Set(existing.map((t) => t.account.trim()).filter(Boolean))];
-    return known.length === 1 ? known[0] : "";
-  });
+  // 刻意不预填：预填成唯一的历史账户，最容易把新账户的数据默默并进旧账户
+  const [account, setAccount] = useState("");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -83,13 +80,22 @@ export function ImportPanel(props: {
     [existing]
   );
 
+  const accountName = account.trim();
+  /** 大小写不同视为同一个账户，避免手滑建出 "amp" 和 "AMP" 两个 */
+  const canonicalAccount = useMemo(() => {
+    if (!accountName) return "";
+    return (
+      accountOptions.find((a) => a.toLowerCase() === accountName.toLowerCase()) ?? accountName
+    );
+  }, [accountName, accountOptions]);
+
   /** 账户选择优先于 CSV 里的账户列：没有列的文件（AMP 订单历史）只能靠这里指定 */
   const drafts = useMemo(
     () =>
-      account.trim()
-        ? built.drafts.map((d) => ({ ...d, account: account.trim() }))
+      canonicalAccount
+        ? built.drafts.map((d) => ({ ...d, account: canonicalAccount }))
         : built.drafts,
-    [built.drafts, account]
+    [built.drafts, canonicalAccount]
   );
 
   const dupCount = useMemo(() => {
@@ -128,7 +134,7 @@ export function ImportPanel(props: {
   };
 
   const doImport = async () => {
-    if (!drafts.length) return;
+    if (!drafts.length || !canonicalAccount) return;
     setBusy(true);
     try {
       const r = await onImport(drafts);
@@ -185,10 +191,25 @@ export function ImportPanel(props: {
             <option key={a} value={a} />
           ))}
         </datalist>
-        <span className="tj-muted tj-small">
-          {account.trim()
-            ? `将写入账户「${account.trim()}」，之后可在顶部按账户查看`
-            : "留空则不分账户；不同券商/账户要分开统计时建议填上"}
+        {accountOptions.length > 0 && (
+          <div className="tj-account-quick">
+            <span className="tj-muted tj-small">已有：</span>
+            {accountOptions.map((a) => (
+              <button
+                key={a}
+                type="button"
+                className={`tj-account ${canonicalAccount === a ? "is-on" : ""}`}
+                onClick={() => setAccount(a)}
+              >
+                {a}
+              </button>
+            ))}
+          </div>
+        )}
+        <span className={`tj-small ${canonicalAccount ? "tj-muted" : "tj-warn-text"}`}>
+          {canonicalAccount
+            ? `将写入账户「${canonicalAccount}」`
+            : "必填：不同券商 / 账户要分开统计，全靠这个字段"}
         </span>
       </div>
 
@@ -441,10 +462,15 @@ export function ImportPanel(props: {
             <button
               type="button"
               className="tj-btn primary"
-              disabled={!built.drafts.length || busy}
+              disabled={!built.drafts.length || busy || !canonicalAccount}
               onClick={doImport}
+              title={!canonicalAccount ? "先在上面填一个账户名" : undefined}
             >
-              {busy ? "写入中…" : `导入 ${built.drafts.length} 笔`}
+              {busy
+                ? "写入中…"
+                : !canonicalAccount
+                  ? "先填账户名"
+                  : `导入 ${built.drafts.length} 笔`}
             </button>
             {result && <span className="tj-import-result">{result}</span>}
           </div>
@@ -454,7 +480,8 @@ export function ImportPanel(props: {
       {!parsed.length && (
         <div className="tj-hint">
           支持的列名（中英文都认）：日期 / date、标的 / symbol、方向 / side、数量 / qty、
-          开仓价 / entry、平仓价 / exit、盈亏 / pnl、手续费 / fees、策略 / setup、账户 / account。
+          开仓价 / entry、平仓价 / exit、盈亏 / pnl、手续费 / fees、策略 / setup。
+          CSV 里如果有账户列，会被顶部填的账户覆盖。
           没有盈亏列时，会用开平仓价 × 数量自动算，并扣掉手续费。
           <br />
           订单历史（含「买/卖、类型、填充数量、平均成交价、状态」这类列）也能直接导入：

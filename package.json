@@ -1,6 +1,6 @@
 {
   "name": "trade-journal",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Local-first trading journal for Obsidian with CSV import and analytics.",
   "main": "main.js",
   "scripts": {

@@ -198,6 +198,21 @@ const accOnly = renderToStaticMarkup(
   })
 );
 expect("导入页有账户输入", accOnly.includes("导入到账户"));
+expect("账户未填时给出必填提示", accOnly.includes("必填"));
+
+const importCsv = `日期,标的,方向,数量,开仓价,平仓价,手续费
+2026-10-15,AAPL,做多,200,229.1,233.4,1.8`;
+const importHtml = renderToStaticMarkup(
+  React.createElement(JournalApp, {
+    trades,
+    currency: "$",
+    initialTab: "import",
+    csvPrefill: importCsv,
+    onImport: async () => ({ created: 0, skipped: 0 }),
+  })
+);
+expect("有数据但没填账户时按钮改为先填账户", importHtml.includes("先填账户名"));
+expect("有数据时仍显示已有账户快捷按钮", importHtml.includes("已有："));
 
 const noDeleteHtml = renderToStaticMarkup(
   React.createElement(JournalApp, {
