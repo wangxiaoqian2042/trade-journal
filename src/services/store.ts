@@ -2,6 +2,7 @@ import { App, TFile, TFolder, normalizePath } from "obsidian";
 import { Session, Trade, TradeDraft, tradeKey } from "../types";
 import { parseFrontmatter, stringifyFrontmatter } from "./frontmatter";
 import { sessionOf } from "./query";
+import { accountFolder, noteFilePath } from "./paths";
 import { classifyPnl } from "./analytics";
 
 function num(v: unknown, fallback = 0): number {
@@ -83,6 +84,7 @@ function toTrade(
   };
 }
 
+
 export class TradeStore {
   constructor(private app: App, public folder: string, public breakEven = 0) {}
 
@@ -90,14 +92,19 @@ export class TradeStore {
     return normalizePath(this.folder.trim() || "Trading");
   }
 
-  async ensureFolder(): Promise<void> {
-    const path = this.basePath;
-    const existing = this.app.vault.getAbstractFileByPath(path);
-    if (existing instanceof TFolder) return;
-    try {
-      await this.app.vault.createFolder(path);
-    } catch {
-      // 已存在或并发创建，忽略
+  async ensureFolder(target?: string): Promise<void> {
+    const path = normalizePath(target ?? this.basePath);
+    // 账户子目录可能带上级，逐层建，避免父目录不存在时 createFolder 报错
+    const parts = path.split("/");
+    for (let i = 1; i <= parts.length; i++) {
+      const p = parts.slice(0, i).join("/");
+      const existing = this.app.vault.getAbstractFileByPath(p);
+      if (existing instanceof TFolder) continue;
+      try {
+        await this.app.vault.createFolder(p);
+      } catch {
+        // 已存在或并发创建，忽略
+      }
     }
   }
 
@@ -137,14 +144,7 @@ export class TradeStore {
   }
 
   private filename(d: TradeDraft): string {
-    const slug = (s: string) =>
-      s.replace(/[\\/:*?"<>|#^[\]]/g, "").replace(/\s+/g, "-").slice(0, 40);
-    const stamp = `${d.date.replace(/-/g, "")}${(d.time || "").replace(":", "")}`;
-    return normalizePath(
-      `${this.basePath}/${stamp}-${slug(d.symbol) || "trade"}-${slug(
-        d.setup
-      ) || "trade"}.md`
-    );
+    return normalizePath(noteFilePath(this.basePath, d));
   }
 
   private serialize(d: TradeDraft): string {
@@ -189,6 +189,8 @@ export class TradeStore {
         skipped++;
         continue;
       }
+      const acct = accountFolder(draft.account);
+      if (acct) await this.ensureFolder(`${this.basePath}/${acct}`);
       let path = this.filename(draft);
       let n = 1;
       while (this.app.vault.getAbstractFileByPath(path)) {

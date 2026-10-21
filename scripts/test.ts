@@ -38,6 +38,7 @@ import {
 import { formatMetric, compareMetric, REGISTRY_BY_ID } from "../src/services/metrics";
 import { buildInsights, headline, highlights } from "../src/services/insights";
 import { auditTrades, hasGap } from "../src/services/quality";
+import { accountFolder, noteFilePath } from "../src/services/paths";
 
 let failed = 0;
 function ok(name: string, cond: boolean, extra?: unknown) {
@@ -648,6 +649,16 @@ ok(
   hasActiveQuery({ preset: "all", filters: { accounts: ["AMP"] } }) === true
 );
 
+
+
+/* ---- 账户目录（方案 B：写入按账户分目录）---- */
+const pathDraft = { ...mkTrade("2026-10-09", 100), time: "21:34", symbol: "MNQ", setup: "突破", account: "AMP" };
+ok("有账户时写到子目录", noteFilePath("Trading", pathDraft) === "Trading/AMP/202610092134-MNQ-突破.md", noteFilePath("Trading", pathDraft));
+ok("空账户留在根目录", noteFilePath("Trading", { ...pathDraft, account: "" }) === "Trading/202610092134-MNQ-突破.md", noteFilePath("Trading", { ...pathDraft, account: "" }));
+ok("账户名里的斜杠被清掉", accountFolder("A/B") === "AB", accountFolder("A/B"));
+ok("账户名首尾空格被清掉", accountFolder("  AMP  ") === "AMP");
+ok("路径不会出现双斜杠", !noteFilePath("Trading/", { ...pathDraft, account: "AMP" }).includes("//"), noteFilePath("Trading/", pathDraft));
+ok("未分类账户不建目录", noteFilePath("Trading", { ...pathDraft, account: "   " }) === noteFilePath("Trading", { ...pathDraft, account: "" }));
 
 console.log(failed === 0 ? "\n全部通过" : `\n${failed} 项失败`);
 process.exit(failed === 0 ? 0 : 1);

@@ -210,7 +210,7 @@ export function ImportPanel(props: {
         )}
         <span className={`tj-small ${canonicalAccount ? "tj-muted" : "tj-warn-text"}`}>
           {canonicalAccount
-            ? `将写入账户「${canonicalAccount}」`
+            ? `将写入账户「${canonicalAccount}」，笔记会放进该账户的子目录`
             : "必填：不同券商 / 账户要分开统计，全靠这个字段"}
         </span>
       </div>

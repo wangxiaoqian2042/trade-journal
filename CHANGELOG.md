@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.5.0 — 2026-10-21
+
+**方案 B：每个账户一个子目录**
+- 新导入的笔记写到 `Trading/<账户>/`，例如 `Trading/AMP/`、`Trading/Tradovate/`
+- 没有账户的交易仍留在 `Trading/` 根目录，不强行塞进「未分类」文件夹
+- 账户名做了文件名清洗（`A/B` → `AB`），空账户不建目录
+- 读取本来就是递归的，所以老笔记无论在哪一层都能读到；本次已把 49 个 AMP 笔记移到 `Trading/AMP/`
+- 目录只是存放位置：账户归属仍以 frontmatter 的 `account` 为准，手动挪文件不会改账户
+
+**备份**
+- 搬家前：`trade-journal-backup-Trading-20261021.zip`（49 个文件，扁平）
+- 搬家后：`trade-journal-backup-folders-20261021.zip`（49 个文件，分目录）
+
 ## 0.4.3 — 2026-10-21
 
 **新增「平仓时间」映射**
