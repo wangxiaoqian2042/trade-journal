@@ -82,6 +82,18 @@ export function JournalApp(props: JournalAppProps) {
   const setups = useMemo(() => uniqueValues(trades, (t) => t.setup), [trades]);
   const accounts = useMemo(() => uniqueValues(trades, (t) => t.account), [trades]);
 
+  // 顶部账户切换：只列数据里真实存在的账户，没有账户的交易单列一项「未分类」
+  const accountOptions = useMemo(() => {
+    const opts = accounts.map((a) => ({ value: a, label: a }));
+    if (trades.some((t) => !t.account.trim())) opts.push({ value: "", label: "未分类" });
+    return opts;
+  }, [accounts, trades]);
+  const accountCount = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const t of trades) m.set(t.account, (m.get(t.account) ?? 0) + 1);
+    return m;
+  }, [trades]);
+
   // 唯一的数据入口：仪表盘和交易表格吃同一份快照，口径不会分叉
   const snapshot = useMemo(() => buildSnapshot(trades, query), [trades, query]);
   const filtered = snapshot.trades;
@@ -166,6 +178,7 @@ export function JournalApp(props: JournalAppProps) {
 
   const hasFilter = hasActiveQuery(query);
 
+  const selectedAccount = f.accounts?.length === 1 ? f.accounts[0] : null;
   const optAll = [{ value: "all", label: "全部" }];
   const oneOf = (v: string) => (v && v !== "all" ? [v] : []);
 
@@ -178,6 +191,12 @@ export function JournalApp(props: JournalAppProps) {
             <div className="tj-title-meta">
               <span>{trades.length} 笔记录</span>
               <span className="tj-dot" />
+              {selectedAccount !== null && (
+                <>
+                  <span className="tj-acct-badge">{selectedAccount || "未分类"}</span>
+                  <span className="tj-dot" />
+                </>
+              )}
               <span className={toneClass(totalPnl)}>
                 当前筛选 {money(totalPnl, currency)}
               </span>
@@ -211,6 +230,32 @@ export function JournalApp(props: JournalAppProps) {
 
         {tab !== "import" && trades.length > 0 && (
           <>
+            {accountOptions.length > 1 && (
+              <div className="tj-accounts">
+                <span className="tj-accounts-label">账户</span>
+                <button
+                  type="button"
+                  className={`tj-account ${selectedAccount === null ? "is-on" : ""}`}
+                  onClick={() => patch({ accounts: [] })}
+                >
+                  全部
+                  <em>{trades.length}</em>
+                </button>
+                {accountOptions.map((a) => (
+                  <button
+                    key={a.value || "__none"}
+                    type="button"
+                    className={`tj-account ${selectedAccount === a.value ? "is-on" : ""}`}
+                    onClick={() => patch({ accounts: [a.value] })}
+                    title={a.value ? `只看账户 ${a.value}` : "只看没有账户的交易"}
+                  >
+                    {a.label}
+                    <em>{accountCount.get(a.value) ?? 0}</em>
+                  </button>
+                ))}
+              </div>
+            )}
+
             <div className="tj-presets">
               {PRESETS.map((p) => (
                 <button
@@ -257,17 +302,6 @@ export function JournalApp(props: JournalAppProps) {
                 ...setups.map((s) => ({ value: s, label: s })),
               ]}
             />
-            {accounts.length > 1 && (
-              <Select
-                label="账户"
-                value={f.accounts?.[0] ?? "all"}
-                onChange={(v) => patch({ accounts: oneOf(v) })}
-                options={[
-                  ...optAll,
-                  ...accounts.map((s) => ({ value: s, label: s })),
-                ]}
-              />
-            )}
             <Select
               label="方向"
               value={f.directions?.[0] ?? "all"}

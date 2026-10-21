@@ -44,6 +44,11 @@ export function ImportPanel(props: {
   const [feesInPnl, setFeesInPnl] = useState(false);
   const [modeOverride, setModeOverride] = useState<Mode | null>(null);
   const [feePerSide, setFeePerSide] = useState(0.72);
+  const [account, setAccount] = useState(() => {
+    // 只有一个历史账户时默认选它，省得每次导入都要重填
+    const known = [...new Set(existing.map((t) => t.account.trim()).filter(Boolean))];
+    return known.length === 1 ? known[0] : "";
+  });
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -73,11 +78,25 @@ export function ImportPanel(props: {
       : { drafts: [], errors: [] };
   }, [mode, paired, dataRows, header, map, feesInPnl]);
 
+  const accountOptions = useMemo(
+    () => [...new Set(existing.map((t) => t.account.trim()).filter(Boolean))],
+    [existing]
+  );
+
+  /** 账户选择优先于 CSV 里的账户列：没有列的文件（AMP 订单历史）只能靠这里指定 */
+  const drafts = useMemo(
+    () =>
+      account.trim()
+        ? built.drafts.map((d) => ({ ...d, account: account.trim() }))
+        : built.drafts,
+    [built.drafts, account]
+  );
+
   const dupCount = useMemo(() => {
-    if (!built.drafts.length || !existing.length) return 0;
+    if (!drafts.length || !existing.length) return 0;
     const keys = new Set(existing.map(tradeKey));
-    return built.drafts.filter((d) => keys.has(tradeKey(d))).length;
-  }, [built.drafts, existing]);
+    return drafts.filter((d) => keys.has(tradeKey(d))).length;
+  }, [drafts, existing]);
 
   // 必填项缺失时给出明确的诊断，而不是静默失败
   const missing = useMemo(() => {
@@ -109,10 +128,10 @@ export function ImportPanel(props: {
   };
 
   const doImport = async () => {
-    if (!built.drafts.length) return;
+    if (!drafts.length) return;
     setBusy(true);
     try {
-      const r = await onImport(built.drafts);
+      const r = await onImport(drafts);
       setResult(`已导入 ${r.created} 笔，跳过重复 ${r.skipped} 笔`);
       setRaw("");
       setFileName("");
@@ -149,6 +168,28 @@ export function ImportPanel(props: {
             选择文件
           </button>
         </div>
+      </div>
+
+      <div className="tj-account-bar">
+        <label className="tj-field">
+          <span>导入到账户</span>
+          <input
+            list="tj-account-options"
+            value={account}
+            placeholder="例如 AMP"
+            onChange={(e) => setAccount(e.target.value)}
+          />
+        </label>
+        <datalist id="tj-account-options">
+          {accountOptions.map((a) => (
+            <option key={a} value={a} />
+          ))}
+        </datalist>
+        <span className="tj-muted tj-small">
+          {account.trim()
+            ? `将写入账户「${account.trim()}」，之后可在顶部按账户查看`
+            : "留空则不分账户；不同券商/账户要分开统计时建议填上"}
+        </span>
       </div>
 
       <textarea

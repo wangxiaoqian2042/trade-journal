@@ -175,6 +175,30 @@ expect("交易记录页有数据体检条", tableHtml.includes("tj-quality") && 
 expect("体检条列出缺止损", tableHtml.includes("缺止损"));
 expect("体检条列出缺标签", tableHtml.includes("缺标签"));
 
+/* ---------- 多账户切换 ---------- */
+expect("只有一个账户时不显示切换条", !html.includes("tj-accounts"));
+const accTrades = trades.map((t, i) => ({ ...t, account: i % 2 ? "AMP" : "Tradovate" }));
+const accHtml = renderToStaticMarkup(
+  React.createElement(JournalApp, {
+    trades: accTrades,
+    currency: "$",
+    onImport: async () => ({ created: 0, skipped: 0 }),
+  })
+);
+expect("多账户时出现切换条", accHtml.includes("tj-accounts"));
+expect("切换条列出两个账户", accHtml.includes("AMP") && accHtml.includes("Tradovate"));
+expect("切换条有全部选项", accHtml.includes("全部"));
+
+const accOnly = renderToStaticMarkup(
+  React.createElement(JournalApp, {
+    trades,
+    currency: "$",
+    initialTab: "import",
+    onImport: async () => ({ created: 0, skipped: 0 }),
+  })
+);
+expect("导入页有账户输入", accOnly.includes("导入到账户"));
+
 const noDeleteHtml = renderToStaticMarkup(
   React.createElement(JournalApp, {
     trades,

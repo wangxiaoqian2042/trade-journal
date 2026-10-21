@@ -11,7 +11,7 @@ import {
   classifyPnl,
 } from "../src/services/analytics";
 import { stringifyFrontmatter, parseFrontmatter } from "../src/services/frontmatter";
-import { Trade } from "../src/types";
+import { Trade, tradeKey } from "../src/types";
 import { detectOrderExport, pairOrders, contractMultiplier } from "../src/services/pairing";
 import {
   resolveRange,
@@ -616,6 +616,26 @@ const gapSnap = buildSnapshot(
   T
 );
 ok("速览页提示缺策略", buildInsights(gapSnap, "¥").some((i) => i.id === "setupGap"));
+
+
+/* ---- 多账户 ---- */
+const accA = { ...mkTrade("2026-10-01", 100), account: "AMP" };
+const accB = { ...mkTrade("2026-10-01", 100), account: "Tradovate" };
+ok("同成交不同账户不会被当成重复", tradeKey(accA) !== tradeKey(accB), tradeKey(accA));
+ok("账户名大小写与空格不影响去重", tradeKey({ ...accA, account: "  amp " }) === tradeKey(accA));
+ok(
+  "账户筛选只留该账户",
+  filterTrades([accA, accB], { preset: "all", filters: { accounts: ["AMP"] } }, null).length === 1
+);
+const noAcc = { ...mkTrade("2026-10-02", 5), account: "" };
+ok(
+  "空账户可单独筛出",
+  filterTrades([accA, noAcc], { preset: "all", filters: { accounts: [""] } }, null).length === 1
+);
+ok(
+  "选账户算有效查询",
+  hasActiveQuery({ preset: "all", filters: { accounts: ["AMP"] } }) === true
+);
 
 console.log(failed === 0 ? "\n全部通过" : `\n${failed} 项失败`);
 process.exit(failed === 0 ? 0 : 1);

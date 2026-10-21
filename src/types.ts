@@ -40,12 +40,19 @@ export interface TradeDraft extends Omit<Trade, "id"> {
   source?: string;
 }
 
+/**
+ * 导入去重键。
+ *
+ * 必须带账户：两个账户在同一分钟、同一价位各开一笔是完全正常的
+ * （同一策略跑两套执行），不带账户会被当成重复记录丢掉。
+ */
 export function tradeKey(t: {
   date: string;
   symbol: string;
   entry: number;
   exit: number;
   quantity: number;
+  account?: string;
 }): string {
   const r = (n: number) => (Number.isFinite(n) ? n.toFixed(6) : "0");
   return [
@@ -54,5 +61,6 @@ export function tradeKey(t: {
     r(t.entry),
     r(t.exit),
     r(t.quantity),
+    (t.account ?? "").trim().toLowerCase(),
   ].join("|");
 }
