@@ -36,6 +36,10 @@ jobs:
       - name: Pack zip for manual install
         run: ./scripts/pack-release.sh
 
+      # 发布说明直接取自 CHANGELOG.md 的当前版本段落；缺了会在这里失败
+      - name: Build release notes from CHANGELOG
+        run: node scripts/release-notes.mjs > release-notes.md
+
       - uses: softprops/action-gh-release@v2
         with:
           files: |
@@ -43,4 +47,4 @@ jobs:
             manifest.json
             styles.css
             trade-journal-v*.zip
-          generate_release_notes: true
+          body_path: release-notes.md
