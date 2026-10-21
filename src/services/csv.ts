@@ -10,6 +10,7 @@ export type FieldKey =
   | "exit"
   | "pnl"
   | "fees"
+  | "fees2"
   | "setup"
   | "account"
   | "stop"
@@ -26,6 +27,7 @@ export const FIELD_LABELS: Record<FieldKey, string> = {
   exit: "平仓价",
   pnl: "盈亏",
   fees: "手续费",
+  fees2: "手续费（附加）",
   setup: "策略",
   account: "账户",
   stop: "止损",
@@ -42,7 +44,9 @@ const ALIASES: Record<FieldKey, string[]> = {
   entry: ["entry", "entry price", "entry_price", "open price", "open_price", "avg entry", "buy price", "price in", "开仓价", "买入价", "建仓价", "开仓均价"],
   exit: ["exit", "exit price", "exit_price", "close price", "close_price", "avg exit", "sell price", "price out", "平仓价", "卖出价", "出场价", "平仓均价"],
   pnl: ["pnl", "p&l", "p/l", "profit", "profit/loss", "net pnl", "net profit", "realized pnl", "realized p&l", "gross pnl", "gain", "盈亏", "净盈亏", "收益", "盈亏金额", "利润"],
-  fees: ["fees", "fee", "commission", "commissions", "commission fee", "cost", "costs", "total fees", "手续费", "佣金", "费用"],
+  fees: ["fees", "fee", "commission", "commission fee", "cost", "costs", "total fees", "手续费", "佣金", "费用"],
+  // 券商导出的两段费用：Tradovate 的 Fees（交易所/监管）与 Commissions（佣金）要相加
+  fees2: ["commissions", "commission total", "brokerage", "交易佣金", "券商佣金"],
   setup: ["setup", "strategy", "playbook", "system", "pattern", "setup name", "策略", "战法", "玩法", "交易系统"],
   account: ["account", "acct", "account name", "portfolio", "account number", "账户", "账号", "子账户"],
   stop: ["stop", "stop loss", "stop_loss", "sl", "止损", "止损价"],
@@ -305,7 +309,10 @@ export function buildDrafts(
     const quantity = parseNumber(get(r, "quantity")) ?? 0;
     const entry = parseNumber(get(r, "entry")) ?? 0;
     const exit = parseNumber(get(r, "exit")) ?? 0;
-    const fees = Math.abs(parseNumber(get(r, "fees")) ?? 0);
+    // 两列手续费都要计入；只有一列时另一列取 0
+    const fees =
+      Math.abs(parseNumber(get(r, "fees")) ?? 0) +
+      Math.abs(parseNumber(get(r, "fees2")) ?? 0);
     const rawPnl = parseNumber(get(r, "pnl"));
     const gross = (exit - entry) * quantity * (direction === "long" ? 1 : -1);
     const pnl =

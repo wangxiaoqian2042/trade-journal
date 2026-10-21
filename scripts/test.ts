@@ -121,6 +121,15 @@ ok("驼峰 数量=Size", tvMap.quantity === 8, tvMap);
 ok("驼峰 方向=Type", tvMap.direction === 9, tvMap);
 ok("驼峰 标的=ContractName", tvMap.symbol === 1, tvMap);
 ok("驼峰 不误判止盈", tvMap.target === undefined, tvMap.target);
+ok("驼峰 两段手续费分开认", tvMap.fees === 6 && tvMap.fees2 === 11, `${tvMap.fees},${tvMap.fees2}`);
+
+// 带 Commissions 列时两段手续费相加：1.44 + 1.00
+const tvFull = parseCsv(
+  "Id,ContractName,EnteredAt,ExitedAt,EntryPrice,ExitPrice,Fees,PnL,Size,Type,TradeDay,Commissions\n1,MNQZ6,09/21/2026 21:34:02 +08:00,09/21/2026 21:34:33 +08:00,30225.5,30238.75,1.44,-53,2,Short,09/21/2026,1.00"
+);
+const tvFullBuilt = buildDrafts(tvFull.slice(1), tvFull[0], detectColumns(tvFull[0]));
+ok("两段手续费相加 2.44", Math.abs((tvFullBuilt.drafts[0]?.fees ?? 0) - 2.44) < 1e-9, tvFullBuilt.drafts[0]?.fees);
+ok("净盈亏 = 毛 - 两段手续费", Math.abs((tvFullBuilt.drafts[0]?.pnl ?? 0) + 55.44) < 1e-9, tvFullBuilt.drafts[0]?.pnl);
 
 const tvRows = parseCsv(
   "Id,ContractName,EnteredAt,ExitedAt,EntryPrice,ExitPrice,Fees,PnL,Size,Type\n1,MNQZ6,09/21/2026 21:34:02 +08:00,09/21/2026 21:34:33 +08:00,30225.5,30238.75,1.44,-53,2,Short"
@@ -636,6 +645,7 @@ ok(
   "选账户算有效查询",
   hasActiveQuery({ preset: "all", filters: { accounts: ["AMP"] } }) === true
 );
+
 
 console.log(failed === 0 ? "\n全部通过" : `\n${failed} 项失败`);
 process.exit(failed === 0 ? 0 : 1);

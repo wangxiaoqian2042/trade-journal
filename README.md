@@ -92,6 +92,7 @@
 | 平仓价 | exit, exit price, close price, 平仓价, 卖出价 |
 | 盈亏 | pnl, p&l, profit, net pnl, 盈亏, 收益 |
 | 手续费 | fees, fee, commission, 手续费, 佣金 |
+| 手续费（附加） | commissions, brokerage, 交易佣金（两列都映射时相加，Tradovate 用得上） |
 | 策略 | setup, strategy, playbook, 策略, 战法 |
 | 账户 | account, acct, 账户 |
 | 备注 | notes, comment, remarks, 备注 |

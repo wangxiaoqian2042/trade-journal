@@ -26,6 +26,7 @@ const FIELD_ORDER: FieldKey[] = [
   "exit",
   "pnl",
   "fees",
+  "fees2",
   "setup",
   "account",
   "notes",

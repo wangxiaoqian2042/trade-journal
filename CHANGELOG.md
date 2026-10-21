@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.4.2 — 2026-10-21
+
+**支持两段手续费相加**
+- 新增映射字段「手续费（附加）」，别名 `commissions` / `brokerage` / `交易佣金`
+- `fees` 与 `fees2` 同时映射时相加，再计入净盈亏
+- 解决 Tradovate 导出：`Fees`（交易所/监管）与 `Commissions`（券商佣金）是两笔独立费用，之前只扣一列会少算
+- 实测 `trades_export (3).csv`：79 笔，毛盈亏 1,270.50 − 手续费 180.56 = 净盈亏 1,089.94
+
+**已验证的列名识别**
+- `EnteredAt` / `ExitedAt` / `ContractName` / `Size` / `Type` / `PnL` 在 Tradovate 导出里都能自动对上，无需手动映射
+
 ## 0.4.1 — 2026-10-21
 
 **导入账户改为手动输入 + 必填**
