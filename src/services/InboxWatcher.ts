@@ -86,6 +86,8 @@ export class InboxWatcher {
 
       // _imported / _error 等到真的要用时再建，避免空目录污染 vault
       const result: InboxScanResult = { ...empty };
+      /** 失败文件的一句话原因，直接弹给用户看，不用去翻日志 */
+      const failures: string[] = [];
       const existing = await this.host.store.loadAll();
       const seen = new Set(existing.map(tradeKey));
 
@@ -95,6 +97,7 @@ export class InboxWatcher {
           if (!CSV_EXTENSIONS.includes(child.extension.toLowerCase())) continue;
           result.files++;
           result.failed++;
+          failures.push(`${child.name}：请放进账户子目录，例如 _inbox/AMP/`);
           await this.reject(child, "", "请把文件放进账户子目录，例如 _inbox/AMP/，目录名就是账户名");
           continue;
         }
@@ -114,6 +117,7 @@ export class InboxWatcher {
             result.skipped += ok.skipped;
           } else {
             result.failed++;
+            failures.push(`${item.name}：${ok.reason ?? "没有可导入的记录"}`);
           }
         }
       }
@@ -122,7 +126,9 @@ export class InboxWatcher {
         this.host.onImported();
         new Notice(`交易日志：自动导入 ${result.created} 笔（跳过重复 ${result.skipped} 笔）`);
       } else if (result.failed > 0) {
-        new Notice(`交易日志：${result.failed} 个文件没能导入，详情见 _inbox/_error/`);
+        const head = failures.slice(0, 2).join("；");
+        const more = failures.length > 2 ? ` 等 ${failures.length} 个文件` : "";
+        new Notice(`交易日志：${head}${more}。失败的已挪到 _inbox/_error/，旁边有 .log`, 10000);
       }
       return result;
     } finally {
@@ -134,21 +140,26 @@ export class InboxWatcher {
     file: TFile,
     account: string,
     seen: Set<string>
-  ): Promise<{ created: number; skipped: number }> {
+  ): Promise<{ created: number; skipped: number; reason?: string }> {
     let text: string;
     try {
       const bytes = await this.host.app.vault.readBinary(file);
       text = decodeCsv(bytes);
     } catch (e) {
       await this.reject(file, account, `读取失败：${String(e)}`);
-      return { created: 0, skipped: 0 };
+      return { created: 0, skipped: 0, reason: "读取失败" };
     }
 
     const parsed = parseInboxCsv(text, account);
     if (!parsed.drafts.length) {
       const why = parsed.errors.slice(0, 5).map((x) => `第 ${x.row} 行：${x.message}`).join("\n");
       await this.reject(file, account, `没有可导入的记录。\n${why}`);
-      return { created: 0, skipped: 0 };
+      const first = parsed.errors[0];
+      return {
+        created: 0,
+        skipped: 0,
+        reason: first ? `第 ${first.row} 行：${first.message}` : "没有可导入的记录",
+      };
     }
 
     const fresh: TradeDraft[] = [];
