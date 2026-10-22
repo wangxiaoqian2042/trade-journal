@@ -15,7 +15,7 @@ export class TFile extends TAbstractFile {
     super();
     this.path = path;
     this.name = path.split("/").pop() ?? path;
-    this.basename = this.name.replace(/\.md$/, "");
+    this.basename = this.name.includes(".") ? this.name.replace(/\.[^.]+$/, "") : this.name;
     this.extension = this.name.includes(".") ? this.name.split(".").pop()! : "";
   }
 }
@@ -56,9 +56,17 @@ export class FakeVault {
 
   childrenOf(path: string): TAbstractFile[] {
     const out: TAbstractFile[] = [];
+    const prefix = path + "/";
     for (const f of this.files.keys()) {
-      if (f.startsWith(path + "/") && !f.slice(path.length + 1).includes("/")) {
+      if (f.startsWith(prefix) && !f.slice(prefix.length).includes("/")) {
         out.push(new TFile(f));
+      }
+    }
+    for (const d of this.folders) {
+      if (d.startsWith(prefix) && !d.slice(prefix.length).includes("/")) {
+        const folder = new TFolder(d);
+        folder.children = this.childrenOf(d);
+        out.push(folder);
       }
     }
     return out;
@@ -84,6 +92,30 @@ export class FakeVault {
   async delete(file: TFile) {
     this.files.delete(file.path);
   }
+
+  async readBinary(file: TFile): Promise<ArrayBuffer> {
+    return new TextEncoder().encode(this.files.get(file.path) ?? "").buffer as ArrayBuffer;
+  }
+
+  async rename(file: TAbstractFile, newPath: string): Promise<TFile> {
+    const data = this.files.get(file.path);
+    if (data === undefined) throw new Error(`rename: ${file.path} 不存在`);
+    this.files.delete(file.path);
+    this.files.set(newPath, data);
+    return new TFile(newPath);
+  }
+
+  on(_name: string, _cb: unknown): unknown {
+    return {};
+  }
+
+  offref(_ref: unknown): void {
+    // no-op
+  }
+}
+
+export class Notice {
+  constructor(public message?: string) {}
 }
 
 export const App = class {};
