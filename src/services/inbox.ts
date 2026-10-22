@@ -57,6 +57,49 @@ export function decodeCsv(bytes: ArrayBuffer): string {
   return utf8.replace(/^\uFEFF/, "");
 }
 
+/** 一条「这种格式的文件属于哪个账户」的记忆 */
+export interface InboxRule {
+  /** 表头签名，见 formatSignature */
+  signature: string;
+  account: string;
+  /** 给人看的表头片段，设置里显示用 */
+  sample: string;
+  /** 学习时间，ISO */
+  at: string;
+}
+
+/**
+ * 表头签名：把列名归一化后排序去重。
+ * 同一个券商的导出即使列顺序变了，签名也一样，比看文件名可靠。
+ */
+export function formatSignature(header: string[]): string {
+  const tokens = header
+    .map((h) =>
+      h
+        .replace(/^\uFEFF/, "")
+        .trim()
+        .toLowerCase()
+        .replace(/[\s_\-.]+/g, "")
+        .replace(/[^a-z0-9\u4e00-\u9fa5]/g, "")
+    )
+    .filter(Boolean);
+  return [...new Set(tokens)].sort().join("|");
+}
+
+/** 取 CSV 的表头（只解析第一行，大文件也不浪费） */
+export function headerOf(text: string): string[] {
+  const firstLine = text.split(/\r?\n/, 1)[0] ?? "";
+  return parseCsv(firstLine)[0] ?? [];
+}
+
+export function findRule(rules: InboxRule[] | undefined, signature: string): InboxRule | null {
+  if (!rules || !signature) return null;
+  for (let i = rules.length - 1; i >= 0; i--) {
+    if (rules[i].signature === signature) return rules[i];
+  }
+  return null;
+}
+
 export interface InboxParseResult {
   drafts: TradeDraft[];
   errors: { row: number; message: string }[];

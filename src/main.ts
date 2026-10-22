@@ -2,6 +2,8 @@ import { App, Notice, Plugin, PluginSettingTab, Setting, WorkspaceLeaf } from "o
 import { JournalView, VIEW_TYPE } from "./views/JournalView";
 import { TradeStore } from "./services/store";
 import { InboxWatcher } from "./services/InboxWatcher";
+import { InboxRule } from "./services/inbox";
+import { AccountPickerModal } from "./components/AccountPickerModal";
 import { DEFAULT_LAYOUT, WidgetLayout, normalizeLayout } from "./services/layout";
 import type { Tab } from "./components/JournalApp";
 
@@ -23,6 +25,8 @@ interface TradeJournalSettings {
   inboxEnabled: boolean;
   /** 收件箱目录名，相对交易笔记目录 */
   inboxName: string;
+  /** 学会的归户规则：某种表头格式默认归到哪个账户 */
+  inboxRules: InboxRule[];
 }
 
 const DEFAULT_SETTINGS: TradeJournalSettings = {
@@ -41,6 +45,7 @@ const DEFAULT_SETTINGS: TradeJournalSettings = {
   breakEven: 0,
   inboxEnabled: true,
   inboxName: "_inbox",
+  inboxRules: [],
 };
 
 export default class TradeJournalPlugin extends Plugin {
@@ -118,6 +123,22 @@ export default class TradeJournalPlugin extends Plugin {
         store: this.store,
         inboxPath: path,
         onImported: () => this.reloadViews(),
+        getRules: () => this.settings.inboxRules ?? [],
+        learnRule: (rule) => {
+          // 同一格式只留最后一条；上限 30 条，防止无限增长
+          const rest = (this.settings.inboxRules ?? []).filter((r) => r.signature !== rule.signature);
+          this.settings.inboxRules = [...rest, rule].slice(-30);
+          // 只存配置，不重启监听
+          void this.saveData(this.settings);
+        },
+        askAccount: (files, accounts) =>
+          new Promise<string | null>((resolve) => {
+            new AccountPickerModal(this.app, {
+              files,
+              accounts,
+              onPick: (picked) => resolve(picked),
+            }).open();
+          }),
       });
       this.inbox.start();
     }
@@ -191,6 +212,7 @@ export default class TradeJournalPlugin extends Plugin {
     this.settings.layout = normalizeLayout(this.settings.layout);
     const be = Number(this.settings.breakEven);
     this.settings.breakEven = Number.isFinite(be) && be > 0 ? be : 0;
+    if (!Array.isArray(this.settings.inboxRules)) this.settings.inboxRules = [];
   }
 
   async saveSettings(): Promise<void> {
@@ -307,6 +329,33 @@ class TradeJournalSettingTab extends PluginSettingTab {
             await this.plugin.saveSettings();
           })
       );
+
+    const rules = this.plugin.settings.inboxRules ?? [];
+    new Setting(containerEl)
+      .setName("归户规则")
+      .setDesc(
+        rules.length
+          ? "根目录文件按表头格式自动归户。删掉某条后，同类文件会重新弹窗询问。"
+          : "还没有规则。把文件放进 _inbox 根目录并选一次账户，就会自动记住这种格式。"
+      );
+
+    for (const rule of rules) {
+      new Setting(containerEl)
+        .setName(rule.account)
+        .setDesc(`表头：${rule.sample || "（无）"}`)
+        .addButton((b) =>
+          b
+            .setButtonText("删除")
+            .setWarning()
+            .onClick(async () => {
+              this.plugin.settings.inboxRules = (this.plugin.settings.inboxRules ?? []).filter(
+                (r) => r.signature !== rule.signature
+              );
+              await this.plugin.saveSettings();
+              this.display();
+            })
+        );
+    }
 
     new Setting(containerEl)
       .setName("数据说明")

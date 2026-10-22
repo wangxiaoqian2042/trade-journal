@@ -44,6 +44,8 @@ import {
   decodeCsv,
   isInsideInbox,
   isWorkFolder,
+  formatSignature,
+  findRule,
   parseInboxCsv,
 } from "../src/services/inbox";
 
@@ -716,6 +718,20 @@ ok("收件箱识别委托级并配对", inboxOrder.mode === "pair" && inboxOrder
 ok("配对后账户也覆盖", inboxOrder.drafts[0]?.account === "AMP", inboxOrder.drafts[0]?.account);
 
 ok("空文件给出错误", parseInboxCsv("", "AMP").drafts.length === 0);
+
+
+/* ---- 表头签名与归户规则 ---- */
+const sigA = formatSignature(["ContractName", "EnteredAt", "ExitedAt", "PnL", "Size"]);
+const sigB = formatSignature(["size", "pnl", "exitedat", "contractname", "enteredat"]);
+ok("列顺序不同签名相同", sigA === sigB, `${sigA} vs ${sigB}`);
+ok("大小写与分隔符不影响", formatSignature(["Entry Price", "entry_price", "ENTRYPRICE"]) === "entryprice");
+const ruleList = [
+  { signature: "x", account: "AMP", sample: "", at: "" },
+  { signature: "x", account: "topstepx", sample: "", at: "" },
+];
+ok("同签名取最后一条", findRule(ruleList, "x")?.account === "topstepx");
+ok("没匹配返回 null", findRule(ruleList, "y") === null);
+ok("没有规则时返回 null", findRule(undefined, "x") === null);
 
 console.log(failed === 0 ? "\n全部通过" : `\n${failed} 项失败`);
 process.exit(failed === 0 ? 0 : 1);
