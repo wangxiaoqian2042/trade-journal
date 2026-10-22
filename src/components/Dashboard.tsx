@@ -15,7 +15,6 @@ import {
   RecentTrades,
 } from "./charts";
 import { Money, Section, StatCard, fmtPct, money, toneClass } from "./ui";
-import { DayPnl } from "../services/analytics";
 import { Trade } from "../types";
 
 const CATEGORY_LABELS = {
@@ -48,7 +47,6 @@ function prevLabel(preset: string): string {
 export function Dashboard(props: {
   snapshot: DashboardSnapshot;
   cur: string;
-  allDays: DayPnl[];
   onOpen?: (t: Trade) => void;
   /** 图表点选下钻（点日历某天、点标的/策略/星期条、点多空卡片） */
   onDrill?: (d: Drill) => void;
@@ -59,7 +57,7 @@ export function Dashboard(props: {
   layout?: WidgetLayout[];
   onLayoutChange?: (next: WidgetLayout[]) => void;
 }) {
-  const { snapshot, cur, allDays, onOpen, onDrill } = props;
+  const { snapshot, cur, onOpen, onDrill } = props;
   const trades = snapshot.trades;
   /** 图表里的第 i 个点 → 第 i 笔（和 sortTrades 同序，否则点到的不是同一笔） */
   const sorted = useMemo(() => sortTrades(trades), [trades]);
@@ -90,6 +88,9 @@ export function Dashboard(props: {
   const bySymbol = groupBy(trades, (t) => t.symbol).slice(0, 8);
   const weekday = byWeekday(trades).filter((w) => w.key !== "未知");
   const cards = pickMetrics(REGISTRY, cardIds);
+  /** 选了账户就把账户名挂到组件标题上，避免"这到底是哪个账户的数" */
+  const accountName = snapshot.query.filters.accounts?.[0] ?? "";
+  const scopeLabel = accountName ? `${snapshot.label} · ${accountName}` : snapshot.label;
   const deltaLabel = prevLabel(snapshot.query.preset);
   const canCompare = snapshot.prevRange !== null;
 
@@ -99,7 +100,7 @@ export function Dashboard(props: {
         return (
           <Section
             title="累计盈亏"
-            extra={<span className="tj-muted">{snapshot.label}</span>}
+            extra={<span className="tj-muted">{scopeLabel}</span>}
             dragHandleProps={drag}
           >
             <EquityCurve points={curve} cur={cur} onPick={onOpen ? openAt : undefined} />
@@ -107,9 +108,13 @@ export function Dashboard(props: {
         );
       case "calendar":
         return (
-          <Section title="每日盈亏" dragHandleProps={drag}>
+          <Section
+            title="每日盈亏"
+            extra={<span className="tj-muted">{accountName || "全部账户"}</span>}
+            dragHandleProps={drag}
+          >
             <MonthCalendar
-              days={allDays}
+              days={snapshot.days}
               cur={cur}
               onPick={onDrill ? (date) => onDrill({ kind: "date", date }) : undefined}
             />

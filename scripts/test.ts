@@ -660,5 +660,19 @@ ok("账户名首尾空格被清掉", accountFolder("  AMP  ") === "AMP");
 ok("路径不会出现双斜杠", !noteFilePath("Trading/", { ...pathDraft, account: "AMP" }).includes("//"), noteFilePath("Trading/", pathDraft));
 ok("未分类账户不建目录", noteFilePath("Trading", { ...pathDraft, account: "   " }) === noteFilePath("Trading", { ...pathDraft, account: "" }));
 
+
+/* ---- 每日盈亏跟随账户 ---- */
+const accDays = [
+  { ...mkTrade("2026-10-01", 100), account: "AMP" },
+  { ...mkTrade("2026-10-01", 300), account: "TV" },
+  { ...mkTrade("2026-10-02", -50), account: "TV" },
+];
+const allSnap2 = buildSnapshot(accDays, emptyQuery("all"), T);
+const ampSnap2 = buildSnapshot(accDays, { preset: "all", filters: { accounts: ["AMP"] } }, T);
+const tvSnap2 = buildSnapshot(accDays, { preset: "all", filters: { accounts: ["TV"] } }, T);
+ok("全部账户每日盈亏合并", allSnap2.days.find((d) => d.date === "2026-10-01")?.pnl === 400);
+ok("单账户每日盈亏只算自己", ampSnap2.days.find((d) => d.date === "2026-10-01")?.pnl === 100, ampSnap2.days);
+ok("另一账户不同日", tvSnap2.days.length === 2 && tvSnap2.days[0].pnl === 300, tvSnap2.days);
+
 console.log(failed === 0 ? "\n全部通过" : `\n${failed} 项失败`);
 process.exit(failed === 0 ? 0 : 1);

@@ -70,6 +70,7 @@ expect("默认选中全部时间", html.includes("tj-preset is-active") && html.
 expect("渲染出 6 张指标卡", (html.match(/tj-stat-label/g) || []).length === 6);
 expect("图表区块：累计盈亏", html.includes("累计盈亏"));
 expect("图表区块：每日盈亏月历", html.includes("每日盈亏") && html.includes("tj-cal-grid"));
+expect("未选账户时月历标注全部账户", html.includes("全部账户"));
 expect("月历有周次列", html.includes("tj-cal-wn"));
 expect("策略表现带度量切换", html.includes("策略表现") && html.includes("tj-bar-switch"));
 expect("回撤区块", html.includes("回撤") && html.includes("tj-chart-svg"));
@@ -83,7 +84,6 @@ const monthHtml = renderToStaticMarkup(
   React.createElement(Dashboard, {
     snapshot: monthSnap,
     cur: "$",
-    allDays: monthSnap.days,
   })
 );
 expect("本月档出现环比文字", monthHtml.includes("较上月"), true);
@@ -103,7 +103,6 @@ const emptyHtml = renderToStaticMarkup(
   React.createElement(Dashboard, {
     snapshot: buildSnapshot([], { preset: "month", filters: {} }, "2026-10-19"),
     cur: "$",
-    allDays: [],
   })
 );
 expect("空数据渲染不抛错", emptyHtml.includes("还没有交易数据"));
@@ -117,7 +116,6 @@ const editableHtml = renderToStaticMarkup(
   React.createElement(Dashboard, {
     snapshot: monthSnap,
     cur: "$",
-    allDays: monthSnap.days,
     onCardsChange: () => {},
     onLayoutChange: () => {},
   })
@@ -136,7 +134,6 @@ const drillHtml = renderToStaticMarkup(
   React.createElement(Dashboard, {
     snapshot: monthSnap,
     cur: "$",
-    allDays: monthSnap.days,
     onDrill: () => {},
   })
 );
@@ -149,7 +146,6 @@ const openHtml = renderToStaticMarkup(
   React.createElement(Dashboard, {
     snapshot: monthSnap,
     cur: "$",
-    allDays: monthSnap.days,
     onOpen: () => {},
   })
 );

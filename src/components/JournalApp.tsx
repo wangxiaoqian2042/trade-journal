@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Direction, Trade, TradeDraft } from "../types";
-import { dailyPnl, uniqueValues } from "../services/analytics";
+import { uniqueValues } from "../services/analytics";
 import {
   DashboardQuery,
   Drill,
@@ -106,7 +106,6 @@ export function JournalApp(props: JournalAppProps) {
   );
   const gaps = useMemo(() => auditTrades(gapScope), [gapScope]);
   const activeGaps = query.filters.gaps ?? [];
-  const allDays = useMemo(() => dailyPnl(trades), [trades]);
 
   const f = query.filters;
   const patch = (p: Partial<DashboardQuery["filters"]>) => {
@@ -361,7 +360,6 @@ export function JournalApp(props: JournalAppProps) {
               <Dashboard
                 snapshot={snapshot}
                 cur={currency}
-                allDays={allDays}
                 onOpen={props.onOpen}
                 onDrill={drill}
                 cardIds={props.cardIds}
