@@ -84,7 +84,7 @@ const html = `<!DOCTYPE html>
   }
 </style>
 </head>
-<body>
+<body class="theme-light">
   <div class="banner">
     <div><b>交易日志 · 界面预览</b> <span>（示例数据，非真实交割单；插件内效果一致）</span></div>
     <span>切到「导入」页可以试粘贴 CSV</span>

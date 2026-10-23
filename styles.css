@@ -52,6 +52,16 @@
   font-size: 19px;
   font-weight: 650;
   letter-spacing: -0.01em;
+  /* 赛博朋克 2077 的黄。
+     不写死会继承主题的 --h2-color（Netrunner 里是红色 #ff5670）。 */
+  color: #fcee0a;
+  text-shadow: 0 0 14px rgba(252, 238, 10, 0.28);
+}
+
+/* 浅色主题下纯黄在白色背景上几乎看不见，降成同色相的暗金 */
+.theme-light .tj-title h2 {
+  color: #8a7500;
+  text-shadow: none;
 }
 
 .tj-title-meta {
