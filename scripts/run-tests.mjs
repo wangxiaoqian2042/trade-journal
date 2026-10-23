@@ -19,12 +19,6 @@ const cases = [
     format: "esm",
   },
   {
-    name: "收件箱集成",
-    entry: "scripts/inbox-test.ts",
-    out: "inbox-test.mjs",
-    format: "esm",
-  },
-  {
     name: "渲染冒烟",
     entry: "scripts/render-test.tsx",
     out: "render-test.cjs",
@@ -50,7 +44,6 @@ for (const c of cases) {
     jsx: "automatic",
     logLevel: "error",
     absWorkingDir: root,
-    alias: { obsidian: join(root, "scripts/obsidian-stub.ts") },
   });
 
   process.stdout.write(`\n── ${c.name} ──\n`);

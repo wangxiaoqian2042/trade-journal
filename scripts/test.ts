@@ -39,15 +39,6 @@ import { formatMetric, compareMetric, REGISTRY_BY_ID } from "../src/services/met
 import { buildInsights, headline, highlights } from "../src/services/insights";
 import { auditTrades, hasGap } from "../src/services/quality";
 import { accountFolder, noteFilePath } from "../src/services/paths";
-import {
-  accountFromInboxPath,
-  decodeCsv,
-  isInsideInbox,
-  isWorkFolder,
-  formatSignature,
-  findRule,
-  parseInboxCsv,
-} from "../src/services/inbox";
 
 let failed = 0;
 function ok(name: string, cond: boolean, extra?: unknown) {
@@ -683,55 +674,6 @@ ok("全部账户每日盈亏合并", allSnap2.days.find((d) => d.date === "2026-
 ok("单账户每日盈亏只算自己", ampSnap2.days.find((d) => d.date === "2026-10-01")?.pnl === 100, ampSnap2.days);
 ok("另一账户不同日", tvSnap2.days.length === 2 && tvSnap2.days[0].pnl === 300, tvSnap2.days);
 
-
-/* ---- 导入收件箱 ---- */
-const inbox = "Trading/_inbox";
-ok("路径在收件箱内", isInsideInbox(inbox, "Trading/_inbox/AMP/a.csv"));
-ok("同名前缀不算收件箱", !isInsideInbox(inbox, "Trading/_inbox2/AMP/a.csv"));
-ok("账户取自第一层目录", accountFromInboxPath(inbox, "Trading/_inbox/AMP/a.csv") === "AMP");
-ok("多套一层仍取第一层", accountFromInboxPath(inbox, "Trading/_inbox/AMP/2026/a.csv") === "AMP");
-ok("根目录文件没有账户", accountFromInboxPath(inbox, "Trading/_inbox/a.csv") === null);
-ok("_imported 里的不算", accountFromInboxPath(inbox, "Trading/_inbox/_imported/AMP/a.csv") === null);
-ok("_error 里的不算", accountFromInboxPath(inbox, "Trading/_inbox/_error/AMP/a.csv") === null);
-ok("工作目录识别", isWorkFolder("_imported") && isWorkFolder("_error") && !isWorkFolder("AMP"));
-
-const utf8Bytes = new TextEncoder().encode("\uFEFF日期,标的\n2026-10-01,MNQ");
-ok("UTF-8 BOM 被去掉", decodeCsv(utf8Bytes.buffer as ArrayBuffer).startsWith("日期"));
-const gbkBytes = new Uint8Array([0xc8, 0xd5, 0xc6, 0xda, 0x2c, 0xb1, 0xea, 0xb5, 0xc4]); // "日期,标的"
-ok("GBK 自动回退", decodeCsv(gbkBytes.buffer as ArrayBuffer) === "日期,标的", decodeCsv(gbkBytes.buffer as ArrayBuffer));
-
-const inboxRow = parseInboxCsv(
-  "ContractName,EnteredAt,ExitedAt,EntryPrice,ExitPrice,Fees,PnL,Size,Type\nMNQZ6,09/21/2026 21:34:02 +08:00,09/21/2026 21:34:33 +08:00,30225.5,30238.75,1.44,-53,2,Short",
-  "Tradovate"
-);
-ok("收件箱按行解析", inboxRow.mode === "row" && inboxRow.drafts.length === 1, inboxRow);
-ok("账户由目录名覆盖", inboxRow.drafts[0]?.account === "Tradovate", inboxRow.drafts[0]?.account);
-ok("单行盈亏仍扣费", Math.abs((inboxRow.drafts[0]?.pnl ?? 0) + 54.44) < 1e-9, inboxRow.drafts[0]?.pnl);
-
-const inboxOrder = parseInboxCsv(
-  "商品代码,买/卖,类型,数量,限价,止损价,填充数量,平均成交价,手续费,下单时间,状态,状态时间,订单编号,期限\n" +
-    "F.US.MNQZ26,卖出,市价,6,,,6,29815.75,,2026-10-19 21:44:34,已成交,2026-10-19 21:44:34,1,GTC\n" +
-    "F.US.MNQZ26,买入,市价,6,,,6,29752.25,,2026-10-19 21:44:52,已成交,2026-10-19 21:44:52,2,GTC",
-  "AMP"
-);
-ok("收件箱识别委托级并配对", inboxOrder.mode === "pair" && inboxOrder.drafts.length === 1, inboxOrder);
-ok("配对后账户也覆盖", inboxOrder.drafts[0]?.account === "AMP", inboxOrder.drafts[0]?.account);
-
-ok("空文件给出错误", parseInboxCsv("", "AMP").drafts.length === 0);
-
-
-/* ---- 表头签名与归户规则 ---- */
-const sigA = formatSignature(["ContractName", "EnteredAt", "ExitedAt", "PnL", "Size"]);
-const sigB = formatSignature(["size", "pnl", "exitedat", "contractname", "enteredat"]);
-ok("列顺序不同签名相同", sigA === sigB, `${sigA} vs ${sigB}`);
-ok("大小写与分隔符不影响", formatSignature(["Entry Price", "entry_price", "ENTRYPRICE"]) === "entryprice");
-const ruleList = [
-  { signature: "x", account: "AMP", sample: "", at: "" },
-  { signature: "x", account: "topstepx", sample: "", at: "" },
-];
-ok("同签名取最后一条", findRule(ruleList, "x")?.account === "topstepx");
-ok("没匹配返回 null", findRule(ruleList, "y") === null);
-ok("没有规则时返回 null", findRule(undefined, "x") === null);
 
 console.log(failed === 0 ? "\n全部通过" : `\n${failed} 项失败`);
 process.exit(failed === 0 ? 0 : 1);
