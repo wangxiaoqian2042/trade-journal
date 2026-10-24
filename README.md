@@ -7,7 +7,7 @@
 
 本地优先的交易日志插件。每笔交易是 vault 里的一个 Markdown 文件，CSV 手工导入，所有统计在自己机器上算，不联网、不要账号。
 
-> **⬇️ 只是想用，不打算编译？** 去 [**Releases**](https://github.com/wangxiaoqian2042/trade-journal/releases/latest) 下载 `trade-journal-vX.Y.Z.zip`，解压后按里面的《安装说明》三步装好即可。不需要 Node、不需要命令行。
+> **⬇️ 安装**：在 Obsidian 里打开「设置 → 第三方插件 → 浏览」，搜 **Trade Journal** 直接安装。也可以去 [**Releases**](https://github.com/wangxiaoqian2042/trade-journal/releases/latest) 下载 `trade-journal-vX.Y.Z.zip` 手动安装。
 
 > English README → [README.en.md](README.en.md)
 
@@ -36,6 +36,12 @@
 
 ## 安装
 
+**方式一：社区插件市场（推荐）**
+
+Obsidian → 设置 → 第三方插件 → 浏览，搜索 **Trade Journal**，点安装并启用。以后有新版本，在同一页面点「检查更新」就能升级，不用再手动替换文件。
+
+**方式二：手动安装**
+
 1. 把这三个文件放进 `<你的 vault>/.obsidian/plugins/trade-journal/`：
    - `main.js`
    - `manifest.json`
@@ -43,8 +49,6 @@
 2. Obsidian → 设置 → 第三方插件 → 关闭安全模式 → 刷新 → 启用 **Trade Journal**
 3. 左侧栏出现折线图图标，点它，或命令面板搜「打开交易日志」
 4. 默认在主区域（中间编辑区）以新标签页打开；想挂在右边，用视图右上角的按钮切换，或在设置里把「默认打开位置」改成右侧边栏
-
-> 本项目没有上架社区市场，属于自用插件，装法就是上面这种手动拷贝。
 
 `.obsidian` 默认是隐藏目录。不想折腾隐藏文件的话：设置 → 第三方插件 → 「已安装插件」右侧的文件夹图标，会直接打开 `plugins` 目录，把 `trade-journal` 文件夹拖进去即可。
 
