@@ -1,6 +1,6 @@
 {
   "name": "trade-journal",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "description": "Local-first trading journal for Obsidian with CSV import and analytics.",
   "main": "main.js",
   "scripts": {
@@ -9,12 +9,17 @@
     "demo": "node scripts/build-demo.mjs",
     "test": "node scripts/run-tests.mjs"
   },
-  "keywords": ["obsidian", "trading", "journal", "csv"],
+  "keywords": [
+    "obsidian",
+    "trading",
+    "journal",
+    "csv"
+  ],
   "author": "王小千",
   "license": "MIT",
   "dependencies": {
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
