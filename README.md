@@ -3,9 +3,11 @@
 [![最新版本](https://img.shields.io/github/v/release/wangxiaoqian2042/trade-journal?style=flat-square)](https://github.com/wangxiaoqian2042/trade-journal/releases/latest)
 [![下载量](https://img.shields.io/github/downloads/wangxiaoqian2042/trade-journal/total?style=flat-square)](https://github.com/wangxiaoqian2042/trade-journal/releases)
 
-> **⬇️ 只是想用，不打算编译？** 去 [**Releases**](https://github.com/wangxiaoqian2042/trade-journal/releases/latest) 下载 `trade-journal-vX.Y.Z.zip`，解压后按里面的《安装说明》三步装好即可。不需要 Node、不需要命令行。
+**A local-first trading journal for Obsidian.** Import brokerage CSV exports, keep every trade as a Markdown note, and review P&L, win rate, drawdown and equity curve — all computed on your own machine. No account, no network.
 
 本地优先的交易日志插件。每笔交易是 vault 里的一个 Markdown 文件，CSV 手工导入，所有统计在自己机器上算，不联网、不要账号。
+
+> **⬇️ 只是想用，不打算编译？** 去 [**Releases**](https://github.com/wangxiaoqian2042/trade-journal/releases/latest) 下载 `trade-journal-vX.Y.Z.zip`，解压后按里面的《安装说明》三步装好即可。不需要 Node、不需要命令行。
 
 > English README → [README.en.md](README.en.md)
 
