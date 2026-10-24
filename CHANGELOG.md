@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.2 — 2026-10-24
+
+**社区目录审核修复**
+- 移除 `onunload` 里的 `detachLeavesOfType`：卸载插件时重置视图位置，会把用户拖到侧边栏的视图弹回默认位置
+- `minAppVersion` 从 1.5.0 提高到 1.7.2，与 `revealLeaf`（1.7.2 起返回 Promise）保持一致
+- Release 只上传 Obsidian 需要的 `main.js` / `manifest.json` / `styles.css`，不再附带 zip
+- 构建产物附带 GitHub artifact attestation，可验证文件来源
+
+功能与 0.5.1 相同，没有行为变化。
+
 ## 0.5.1 — 2026-10-24
 
 **标题配色**

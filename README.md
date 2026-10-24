@@ -7,7 +7,7 @@
 
 本地优先的交易日志插件。每笔交易是 vault 里的一个 Markdown 文件，CSV 手工导入，所有统计在自己机器上算，不联网、不要账号。
 
-> **⬇️ 安装**：在 Obsidian 里打开「设置 → 第三方插件 → 浏览」，搜 **Trade Journal** 直接安装。也可以去 [**Releases**](https://github.com/wangxiaoqian2042/trade-journal/releases/latest) 下载 `trade-journal-vX.Y.Z.zip` 手动安装。
+> **⬇️ 安装**：在 Obsidian 里打开「设置 → 第三方插件 → 浏览」，搜 **Trade Journal** 直接安装。不想用社区市场的话，见下方「方式二：手动安装」。
 
 > English README → [README.en.md](README.en.md)
 
@@ -42,7 +42,7 @@ Obsidian → 设置 → 第三方插件 → 浏览，搜索 **Trade Journal**，
 
 **方式二：手动安装**
 
-1. 把这三个文件放进 `<你的 vault>/.obsidian/plugins/trade-journal/`：
+1. 从 [Releases](https://github.com/wangxiaoqian2042/trade-journal/releases/latest) 下载 `main.js`、`manifest.json`、`styles.css`，放进 `<你的 vault>/.obsidian/plugins/trade-journal/`：
    - `main.js`
    - `manifest.json`
    - `styles.css`

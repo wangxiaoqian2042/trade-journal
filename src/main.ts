@@ -74,10 +74,6 @@ export default class TradeJournalPlugin extends Plugin {
     this.addSettingTab(new TradeJournalSettingTab(this.app, this));
   }
 
-  onunload(): void {
-    this.app.workspace.detachLeavesOfType(VIEW_TYPE);
-  }
-
   private alive(l: WorkspaceLeaf | null): l is WorkspaceLeaf {
     return !!l && l.view?.getViewType?.() === VIEW_TYPE;
   }

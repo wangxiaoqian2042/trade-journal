@@ -10,6 +10,9 @@ on:
 
 permissions:
   contents: write
+  # artifact attestation 需要这两个权限
+  id-token: write
+  attestations: write
 
 jobs:
   release:
@@ -35,18 +38,24 @@ jobs:
             exit 1
           fi
 
-      - name: Pack zip for manual install
-        run: ./scripts/pack-release.sh
-
       # 发布说明直接取自 CHANGELOG.md 的当前版本段落；缺了会在这里失败
       - name: Build release notes from CHANGELOG
         run: node scripts/release-notes.mjs > release-notes.md
 
+      # 给三个资产生成来源证明，Obsidian 审核会检查
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            main.js
+            manifest.json
+            styles.css
+
       - uses: softprops/action-gh-release@v2
         with:
+          # 只放 Obsidian 需要的三个文件；多放的会被审核标记为 unsupported
           files: |
             main.js
             manifest.json
             styles.css
-            trade-journal-v*.zip
           body_path: release-notes.md

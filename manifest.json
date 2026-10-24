@@ -1,8 +1,8 @@
 {
   "id": "trade-journal",
   "name": "Trade Journal",
-  "version": "0.5.1",
-  "minAppVersion": "1.5.0",
+  "version": "0.5.2",
+  "minAppVersion": "1.7.2",
   "description": "Local-first trading journal: CSV import, trade log, P&L dashboard, calendar heatmap and equity curve.",
   "author": "王小千",
   "isDesktopOnly": false
