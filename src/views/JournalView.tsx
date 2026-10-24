@@ -159,23 +159,21 @@ export class JournalView extends ItemView {
           }
           await this.reload();
         }}
-        onOpen={async (t: Trade) => {
+        onOpen={(t: Trade) => {
           const file = this.app.vault.getAbstractFileByPath(t.id);
           if (file instanceof TFile) {
-            await this.app.workspace.getLeaf(false).openFile(file);
+            void this.app.workspace.getLeaf(false).openFile(file);
           }
         }}
         cardIds={this.plugin.settings.metricCards}
         layout={this.plugin.settings.layout}
-        onLayoutChange={async (next) => {
+        onLayoutChange={(next) => {
           this.plugin.settings.layout = next;
-          await this.plugin.saveSettings();
-          this.renderApp();
+          void this.plugin.saveSettings().then(() => this.renderApp());
         }}
-        onCardsChange={async (ids: string[]) => {
+        onCardsChange={(ids: string[]) => {
           this.plugin.settings.metricCards = ids;
-          await this.plugin.saveSettings();
-          this.renderApp();
+          void this.plugin.saveSettings().then(() => this.renderApp());
         }}
       />
     );

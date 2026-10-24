@@ -9,7 +9,7 @@ import {
   parseCsv,
 } from "../services/csv";
 import { money, toneClass } from "./ui";
-import { PairMeta, detectOrderExport, pairOrders } from "../services/pairing";
+import { detectOrderExport, pairOrders } from "../services/pairing";
 
 type Mode = "row" | "pair";
 
@@ -127,7 +127,8 @@ export function ImportPanel(props: {
   const readFile = (file: File) => {
     const reader = new FileReader();
     reader.onload = () => {
-      setRaw(String(reader.result ?? ""));
+      const text = typeof reader.result === "string" ? reader.result : "";
+      setRaw(text);
       setFileName(file.name);
       setOverride(null);
       setResult(null);
@@ -323,7 +324,7 @@ export function ImportPanel(props: {
                     已识别列：
                     {orderDet
                       ? Object.entries(orderDet.map)
-                          .map(([k, v]) => `${k}=${header[v as number]}`)
+                          .map(([k, v]) => `${k}=${header[v]}`)
                           .join("，")
                       : "无"}
                   </p>
@@ -465,7 +466,7 @@ export function ImportPanel(props: {
               type="button"
               className="tj-btn primary"
               disabled={!built.drafts.length || busy || !canonicalAccount}
-              onClick={doImport}
+              onClick={() => void doImport()}
               title={!canonicalAccount ? "先在上面填一个账户名" : undefined}
             >
               {busy

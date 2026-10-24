@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.5.3 — 2026-10-24
+
+**社区目录审核（第二轮）**
+- 删除确认不再用系统 `confirm`：改为「点两次确认」，第一次按钮变成确认态，第二次才执行；移动端也不会被系统弹窗打断
+- 删除笔记改走 `FileManager.trashFile()`，尊重用户在「文件与链接」里的删除偏好（回收站 / 系统废纸篓）
+- 修正三处可能把对象转成 `[object Object]` 的地方（FileReader 结果、frontmatter 值、字符串化工具）
+- 设置面板实现声明式 `getSettingDefinitions()`：Obsidian 1.13+ 可以在全局设置搜索里找到这四项
+- 移除 CSS 里 5 处 `!important` 与不兼容的 `ui-monospace` 字体回退，改用选择器特异性
+- 代码通过 Obsidian 官方 ESLint 规则检查（0 error / 0 warning）
+
+功能不变；唯一的交互变化是删除改成点两次确认。
+
 ## 0.5.2 — 2026-10-24
 
 **社区目录审核修复**

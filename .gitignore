@@ -8,3 +8,4 @@ demo/
 release/
 *.zip
 .tmp/
+.tmp-*

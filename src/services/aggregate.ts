@@ -10,7 +10,6 @@ import {
 } from "./query";
 import {
   MetricBase,
-  MetricFormat,
   REGISTRY,
   compareMetric,
   makeBase,
@@ -58,7 +57,7 @@ function buildMetricResults(cur: MetricBase, prev: MetricBase | null): Record<st
     // 先过 display 再比，否则"回撤变大"会被算成变好
     const value = shown(def, def.compute(cur));
     const prevValue = shown(def, prev ? def.compute(prev) : null);
-    const cmp = compareMetric(value, prevValue, def.format as MetricFormat);
+    const cmp = compareMetric(value, prevValue, def.format);
     out[def.id] = {
       id: def.id,
       value,

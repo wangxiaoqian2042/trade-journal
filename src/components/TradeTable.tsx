@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Trade } from "../types";
-import { Money, fmtNum, fmtPct, money, toneClass } from "./ui";
+import { fmtNum, fmtPct, money, toneClass } from "./ui";
 
 type SortKey = "date" | "symbol" | "pnl" | "quantity" | "setup";
 
@@ -8,7 +8,7 @@ export function TradeTable(props: {
   trades: Trade[];
   cur: string;
   onOpen?: (t: Trade) => void;
-  onDelete?: (t: Trade) => void;
+  onDelete?: (t: Trade) => void | Promise<void>;
   /** 批量删除；不传则退化成逐条删 */
   onDeleteMany?: (ts: Trade[]) => Promise<void>;
   /** 批量设置策略（传空字符串表示清除） */
@@ -20,6 +20,9 @@ export function TradeTable(props: {
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [busy, setBusy] = useState(false);
   const [setupOpen, setSetupOpen] = useState(false);
+  // 删除改成「点两次」：第一次变成确认态，第二次才执行；不用原生 confirm
+  const [confirmBulk, setConfirmBulk] = useState(false);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
   const [setupValue, setSetupValue] = useState("");
   const headBox = useRef<HTMLInputElement | null>(null);
   const canSelect = Boolean(onDeleteMany || onDelete || onSetSetup);
@@ -62,31 +65,30 @@ export function TradeTable(props: {
     }
   }, [selectedRows.length, allSelected]);
 
-  const toggle = (id: string) =>
+  const toggle = (id: string) => {
+    setConfirmBulk(false);
+    setConfirmId(null);
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
+  };
 
-  const toggleAll = () =>
+  const toggleAll = () => {
+    setConfirmBulk(false);
+    setConfirmId(null);
     setSelected(allSelected ? new Set<string>() : new Set(rows.map((t) => t.id)));
+  };
 
   const removeSelected = async () => {
     if (!selectedRows.length || busy) return;
-    const total = selectedRows.reduce((a, b) => a + b.pnl, 0);
-    const dates = selectedRows.map((t) => t.date).sort();
-    const span =
-      dates[0] === dates[dates.length - 1] ? dates[0] : `${dates[0]} ~ ${dates[dates.length - 1]}`;
-    const okToGo = confirm(
-      `删除选中的 ${selectedRows.length} 笔交易？\n\n` +
-        `时间：${span}\n` +
-        `合计：${total >= 0 ? "+" : ""}${total.toFixed(2)} ${cur}\n\n` +
-        `笔记会移到 Obsidian 回收站（或系统废纸篓），需要时能还原。`
-    );
-    if (!okToGo) return;
-
+    if (!confirmBulk) {
+      setConfirmBulk(true);
+      return;
+    }
+    setConfirmBulk(false);
     setBusy(true);
     try {
       if (onDeleteMany) await onDeleteMany(selectedRows);
@@ -234,9 +236,20 @@ export function TradeTable(props: {
                 onClick={() => void removeSelected()}
                 disabled={busy}
               >
-                {busy ? "处理中…" : `删除所选 ${selectedRows.length} 笔`}
+                {busy
+                  ? "处理中…"
+                  : confirmBulk
+                    ? `再点一次确认删除 ${selectedRows.length} 笔`
+                    : `删除所选 ${selectedRows.length} 笔`}
               </button>
-              <button type="button" className="tj-link" onClick={() => setSelected(new Set())}>
+              <button
+                type="button"
+                className="tj-link"
+                onClick={() => {
+                  setSelected(new Set());
+                  setConfirmBulk(false);
+                }}
+              >
                 取消选择
               </button>
             </>
@@ -313,10 +326,15 @@ export function TradeTable(props: {
                     type="button"
                     className="tj-link tj-danger"
                     onClick={() => {
-                      if (confirm(`删除这笔 ${t.symbol} ${t.date} 的记录？`)) onDelete(t);
+                      if (confirmId === t.id) {
+                        setConfirmId(null);
+                        void onDelete(t);
+                      } else {
+                        setConfirmId(t.id);
+                      }
                     }}
                   >
-                    删除
+                    {confirmId === t.id ? "确认删除" : "删除"}
                   </button>
                 )}
               </td>

@@ -8,15 +8,16 @@ import { classifyPnl } from "./analytics";
 function num(v: unknown, fallback = 0): number {
   if (typeof v === "number" && Number.isFinite(v)) return v;
   if (typeof v === "string") {
-    const n = Number(v.replace(/[^0-9.\-]/g, ""));
+    const n = Number(v.replace(/[^0-9.-]/g, ""));
     if (Number.isFinite(n) && n !== 0) return n;
   }
   return fallback;
 }
 
 function str(v: unknown, fallback = ""): string {
-  if (v === null || v === undefined) return fallback;
-  return String(v);
+  if (typeof v === "string") return v;
+  if (typeof v === "number" || typeof v === "boolean") return String(v);
+  return fallback;
 }
 
 /** HH:mm[:ss] → 当天的秒数 */
@@ -270,20 +271,8 @@ export class TradeStore {
     return { removed, failed };
   }
 
-  /** 先进 Obsidian 回收站，不行再试系统废纸篓，最后才硬删 */
+  /** 交给 Obsidian 处理：按用户在「文件与链接」里的删除偏好走回收站或系统废纸篓 */
   private async trashFile(file: TFile): Promise<void> {
-    try {
-      await this.app.vault.trash(file, false);
-      return;
-    } catch {
-      /* 继续降级 */
-    }
-    try {
-      await this.app.vault.trash(file, true);
-      return;
-    } catch {
-      /* 继续降级 */
-    }
-    await this.app.vault.delete(file);
+    await this.app.fileManager.trashFile(file);
   }
 }

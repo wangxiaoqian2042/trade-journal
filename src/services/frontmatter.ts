@@ -96,7 +96,13 @@ export function stringifyFrontmatter(
       out.push(`${k}: ${v}`);
       continue;
     }
-    out.push(`${k}: ${q(String(v))}`);
+    const text =
+      typeof v === "string"
+        ? v
+        : typeof v === "number" || typeof v === "boolean"
+          ? String(v)
+          : (JSON.stringify(v) ?? "");
+    out.push(`${k}: ${q(text)}`);
   }
   out.push("---");
   const trimmed = body.replace(/^\s+/, "");

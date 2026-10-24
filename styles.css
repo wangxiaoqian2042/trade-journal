@@ -31,8 +31,8 @@
   box-sizing: border-box;
 }
 
-.tj-mount {
-  padding: 0 !important;
+.view-content.tj-mount {
+  padding: 0;
   height: 100%;
 }
 
@@ -739,11 +739,11 @@
   top: 39px;
 }
 
-.tj-check-col {
+.tj-table .tj-check-col {
   width: 30px;
-  padding-left: 12px !important;
-  padding-right: 0 !important;
-  cursor: default !important;
+  padding-left: 12px;
+  padding-right: 0;
+  cursor: default;
 }
 
 .tj-check-col input {
@@ -843,7 +843,7 @@ td.tj-num {
   border: 1px solid var(--tj-line-strong);
   background: var(--tj-panel-2);
   color: var(--tj-fg);
-  font-family: var(--font-monospace, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-family: var(--font-monospace);
   font-size: 12px;
   line-height: 1.6;
   resize: vertical;
@@ -1703,8 +1703,9 @@ td.tj-num {
 .tj-grid.is-dragging {
   user-select: none;
 }
-.tj-grid.is-dragging * {
-  cursor: grabbing !important;
+.tj-grid.is-dragging .tj-widget,
+.tj-grid.is-dragging .tj-widget * {
+  cursor: grabbing;
 }
 
 .tj-widget.is-being-dragged {

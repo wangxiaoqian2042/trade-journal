@@ -186,7 +186,7 @@ export function parseNumber(raw: string | undefined): number | null {
     negative = true;
     v = v.slice(1, -1);
   }
-  v = v.replace(/[^\d.,\-]/g, "");
+  v = v.replace(/[^\d.,-]/g, "");
   // 千分位与欧洲小数逗号的处理
   if (/,\d{1,2}$/.test(v) && !/\./.test(v)) v = v.replace(",", ".");
   else v = v.replace(/,/g, "");

@@ -1,4 +1,11 @@
-import { App, Plugin, PluginSettingTab, Setting, WorkspaceLeaf } from "obsidian";
+import {
+  App,
+  Plugin,
+  PluginSettingTab,
+  Setting,
+  WorkspaceLeaf,
+  type SettingDefinitionItem,
+} from "obsidian";
 import { JournalView, VIEW_TYPE } from "./views/JournalView";
 import { TradeStore } from "./services/store";
 import { DEFAULT_LAYOUT, WidgetLayout, normalizeLayout } from "./services/layout";
@@ -121,7 +128,8 @@ export default class TradeJournalPlugin extends Plugin {
   }
 
   async loadSettings(): Promise<void> {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    const saved = (await this.loadData()) as Partial<TradeJournalSettings> | null;
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, saved);
     // 配置可能来自旧版本或被手改过，统一清洗一次
     this.settings.layout = normalizeLayout(this.settings.layout);
     const be = Number(this.settings.breakEven);
@@ -146,6 +154,59 @@ class TradeJournalSettingTab extends PluginSettingTab {
     super(app, plugin);
   }
 
+  /**
+   * Obsidian 1.13+ 的声明式设置，让这几项能被全局设置搜索索引到。
+   * 旧版本仍然走下面的 display()，两边描述的是同一组配置。
+   */
+  getSettingDefinitions(): SettingDefinitionItem[] {
+    return [
+      {
+        name: "在主区域打开",
+        desc: "关闭后默认打开到右侧边栏；两个位置都能用视图右上角的按钮随时切换。",
+        control: { type: "toggle", key: "openInMainArea", defaultValue: true },
+      },
+      {
+        name: "交易笔记目录",
+        desc: "交易记录会以 Markdown 形式保存在 vault 的这个目录下",
+        control: {
+          type: "text",
+          key: "folder",
+          placeholder: "Trading",
+          defaultValue: "Trading",
+        },
+      },
+      {
+        name: "货币符号",
+        desc: "显示盈亏时使用的前缀，例如 ¥ 或 $",
+        control: { type: "text", key: "currency", placeholder: "¥", defaultValue: "¥" },
+      },
+      {
+        name: "打平区间",
+        desc: "单笔盈亏落在这个范围内算打平，不计入胜率、也不打断连胜连亏。填 0 表示只有刚好 0 才算平。",
+        control: { type: "text", key: "breakEven", placeholder: "0", defaultValue: "0" },
+      },
+    ];
+  }
+
+  getControlValue(key: string): unknown {
+    return (this.plugin.settings as unknown as Record<string, unknown>)[key];
+  }
+
+  async setControlValue(key: string, value: unknown): Promise<void> {
+    const settings = this.plugin.settings as unknown as Record<string, unknown>;
+    const text = typeof value === "string" ? value.trim() : "";
+
+    if (key === "folder") settings.folder = text || "Trading";
+    else if (key === "currency") settings.currency = text || "¥";
+    else if (key === "breakEven") {
+      const n = Number(text);
+      settings.breakEven = Number.isFinite(n) && n > 0 ? n : 0;
+    } else settings[key] = value;
+
+    await this.plugin.saveSettings();
+    if (key === "currency") this.plugin.reloadViews();
+  }
+
   display(): void {
     const { containerEl } = this;
     containerEl.empty();
@@ -153,7 +214,7 @@ class TradeJournalSettingTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName("默认打开位置")
       .setDesc(
-        "主区域：占满中间的编辑区，适合看图表；右侧边栏：一直挂在右边，边看 K 线边记。两个位置都能随时切换（视图右上角有按钮）。"
+        "主区域：占满中间的编辑区，适合看图表；右侧边栏：一直挂在右边，边看行情边记。两个位置都能随时切换（视图右上角有按钮）。"
       )
       .addDropdown((d) =>
         d

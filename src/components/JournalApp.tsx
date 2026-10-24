@@ -431,31 +431,34 @@ export function JournalApp(props: JournalAppProps) {
                   onOpen={props.onOpen}
                   onDelete={
                     props.onDelete
-                      ? async (t) => {
-                          await props.onDelete?.(t);
-                          props.onReload?.();
-                        }
+                      ? (t) =>
+                          Promise.resolve(props.onDelete?.(t)).finally(() =>
+                            props.onReload?.()
+                          )
                       : undefined
                   }
                   onDeleteMany={
                     props.onDeleteMany
-                      ? async (ts) => {
-                          await props.onDeleteMany?.(ts);
-                          props.onReload?.();
-                        }
+                      ? (ts) =>
+                          Promise.resolve(props.onDeleteMany?.(ts)).finally(() =>
+                            props.onReload?.()
+                          )
                       : props.onDelete
-                        ? async (ts) => {
-                            for (const t of ts) await props.onDelete?.(t);
-                            props.onReload?.();
+                        ? (ts) => {
+                            const run = async () => {
+                              for (const t of ts) await props.onDelete?.(t);
+                              props.onReload?.();
+                            };
+                            return run();
                           }
                         : undefined
                   }
                   onSetSetup={
                     props.onSetSetup
-                      ? async (ts, setup) => {
-                          await props.onSetSetup?.(ts, setup);
-                          props.onReload?.();
-                        }
+                      ? (ts, setup) =>
+                          Promise.resolve(props.onSetSetup?.(ts, setup)).finally(() =>
+                            props.onReload?.()
+                          )
                       : undefined
                   }
                 />

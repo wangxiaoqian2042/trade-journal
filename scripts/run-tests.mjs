@@ -9,7 +9,9 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const outDir = join(root, ".tmp");
+// 唯一目录 + 删除失败可忽略：受限环境里 rmSync 可能被安全策略挡下，
+// 不能因为清不掉上次的临时目录就让整套测试跑不起来。
+const outDir = join(root, `.tmp-${process.pid}-${Date.now()}`);
 
 const cases = [
   {
@@ -27,7 +29,6 @@ const cases = [
   },
 ];
 
-rmSync(outDir, { recursive: true, force: true });
 mkdirSync(outDir, { recursive: true });
 
 let failed = 0;
@@ -54,7 +55,11 @@ for (const c of cases) {
   }
 }
 
-rmSync(outDir, { recursive: true, force: true });
+try {
+  rmSync(outDir, { recursive: true, force: true });
+} catch {
+  /* 删不掉就留着，文件名带 pid 不会互相覆盖 */
+}
 
 if (failed) {
   console.error(`\n${failed} 套测试未通过`);
