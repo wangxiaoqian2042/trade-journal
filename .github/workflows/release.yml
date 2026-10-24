@@ -1,10 +1,12 @@
 name: Release
 
-# 打 tag 即发布：v0.1.0 → GitHub Release，附上 BRAT / 手动安装所需的三个文件。
+# 打 tag 即发布：0.5.2 → GitHub Release。
+# 注意：tag 必须与 manifest.json 的版本完全一致，且不能带 v 前缀 —
+# Obsidian 社区目录按 tag 精确匹配版本，v0.5.1 会被判定为「没有对应 release」。
 on:
   push:
     tags:
-      - "v*"
+      - "[0-9]*"
 
 permissions:
   contents: write
