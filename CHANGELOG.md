@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.5.1 — 2026-10-24
+
+**标题配色**
+- 插件标题「交易日志」改成赛博朋克 2077 的黄色 `#fcee0a`，深色主题下带一层很淡的霓虹光晕
+- 之前标题没有指定颜色，会继承主题的 `--h2-color`。Netrunner 主题把它定义成红色 `#ff5670`，所以标题一直是红的
+- 浅色主题下自动降为暗金 `#8a7500`，避免纯黄在白色背景上几乎看不见
+
+![标题配色](https://raw.githubusercontent.com/wangxiaoqian2042/trade-journal/main/docs/releases/0.5.1/title-cyberpunk-yellow.png)
+
+**每日盈亏跟随账户**
+- 之前切换账户时，累计盈亏会跟着变，但「每日盈亏」月历始终显示全部账户的总量
+- 现在月历使用当前筛选后的每日盈亏：选 AMP 就只算 AMP，选 topstepx 就只算 topstepx
+- 月历标题显示当前账户名，未选账户时显示「全部账户」；累计盈亏标题也带上账户，避免看错口径
+- 顺带移除了 `Dashboard` 里独立的 `allDays` 数据入口，一个仪表盘只保留一处数据源，不会再出现「这张卡按账户算、那张卡按全部算」
+
+![每日盈亏跟随账户](https://raw.githubusercontent.com/wangxiaoqian2042/trade-journal/main/docs/releases/0.5.1/calendar-by-account.png)
+
+*截图为示例数据；深色配色取自 Netrunner 主题，实际颜色随你的主题变化。*
+
 ## 0.5.0 — 2026-10-21
 
 **方案 B：每个账户一个子目录**
